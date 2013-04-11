@@ -1,7 +1,7 @@
-package net.nomadicalien
+package net.nomadicalien.nlp
 
 /**
- * @author ${user.name}
+ * @author Shawn Garner
  */
 object App {
   
