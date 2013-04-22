@@ -4,7 +4,7 @@ package net.nomadicalien.nlp
  * @author Shawn Garner
  * Created: 3/30/13 6:43 AM
  */
-object LetterFequency {
+object LetterFrequency {
   val englishLetterFrequencies = Map(
     'a' -> 0.08167d,
     'b' -> 0.01492d,
