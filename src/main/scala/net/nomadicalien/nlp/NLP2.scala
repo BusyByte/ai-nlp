@@ -141,7 +141,7 @@ class NLP2(stringToDecode : String) extends Randomness with Logging {
 
     }
 
-    val wordRankingList : List[WordRanking] = WordFrequency.sizeToWordRankingMap.getOrElse(wordSize, ListBuffer()).toList
+    val wordRankingList : List[WordRanking] = WordFrequency.getRankingList(wordSize)
 
     val wordRanking : Option[WordRanking] =  wordRankingList.find { theWordRanking : WordRanking =>
       theWordRanking.word.equalsIgnoreCase(wholeDecryptedWordString)
