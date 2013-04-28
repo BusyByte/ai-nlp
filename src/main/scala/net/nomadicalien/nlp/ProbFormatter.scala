@@ -7,13 +7,13 @@ import java.text.NumberFormat
  * Created: 4/11/13 10:30 PM
  */
 object ProbFormatter {
- val formatHolder = new ThreadLocal[NumberFormat] {
-   override def initialValue(): NumberFormat = {
+ private val formatHolder = new ThreadLocal[NumberFormat] {
+   override def initialValue() : NumberFormat = {
       val numberFormat = NumberFormat.getInstance()
       numberFormat.setMinimumFractionDigits(5)
       numberFormat
    }
  }
 
-  def format(probability : Double) = formatHolder.get().format(probability)
+  def format(probability : Double) = formatHolder.get.format(probability)
 }
