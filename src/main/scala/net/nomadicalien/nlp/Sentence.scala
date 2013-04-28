@@ -11,13 +11,13 @@ class Sentence(stringToDecode : String) extends Logging {
   val NON_ALPHA_PATTERN : String = "[^\\p{Alpha}]+"
   val ALPHA_PATTERN : String = "[\\p{Alpha}]+"
 
-  val words : List[String] = stringToDecode.split(NON_ALPHA_PATTERN).toList
-  //TODO: should not need to be mutable doubles but just doubles
-  val frequencyMap : Map[Char, MutableDouble] = createLetterFrequencyMap(words)
-  val firstLetterFrequencyMap : Map[Char, MutableDouble] = createFirstLetterFrequenceMap(words)
+  val words : List[String] = stringToDecode.toLowerCase.split(NON_ALPHA_PATTERN).toList
+  val frequencyMap : Map[Char, Double] = createLetterFrequencyMap(words)
+  val firstLetterFrequencyMap : Map[Char, Double] = createFirstLetterFrequencyMap(words)
   val doubleLetters : Set[Char] = createDoubleLetterSet(words)
 
-  def  createDoubleLetterSet(foundWordList : List[String] ) : Set[Char] = {
+
+  private def createDoubleLetterSet(foundWordList : List[String] ) : Set[Char] = {
     val doubleLetters = mutable.Set[Char]()
 
     foundWordList.foreach { word =>
@@ -34,7 +34,7 @@ class Sentence(stringToDecode : String) extends Logging {
     doubleLetters.toSet
   }
 
-  def createLetterFrequencyMap(foundWordList : List[String]) : Map[Char, MutableDouble] = {
+  private def createLetterFrequencyMap(foundWordList : List[String]) : Map[Char, Double] = {
     val letterFrequencyMap = mutable.Map[Char, MutableDouble]()
 
     var letterCount : Int = 0
@@ -49,10 +49,10 @@ class Sentence(stringToDecode : String) extends Logging {
       normalizeCount(letterCount, mutableDouble)
     }
 
-    letterFrequencyMap.toMap
+    letterFrequencyMap.mapValues(_.doubleValue()).toMap
   }
 
-  def createFirstLetterFrequenceMap(foundWordList : List[String]) : Map[Char, MutableDouble] = {
+  private def createFirstLetterFrequencyMap(foundWordList : List[String]) : Map[Char, Double] = {
     val firstLetterFrequencyMap = mutable.Map[Char, MutableDouble]()
 
     var letterCount : Int = 0
@@ -67,17 +67,17 @@ class Sentence(stringToDecode : String) extends Logging {
       normalizeCount(letterCount, mutableDouble)
     }
 
-    firstLetterFrequencyMap.toMap
+    firstLetterFrequencyMap.mapValues(_.doubleValue()).toMap
   }
 
-  def normalizeCount(totalLetterCount : Int, observationCount : MutableDouble) {
+  private def normalizeCount(totalLetterCount : Int, observationCount : MutableDouble) {
 
     var doubleValue : Double = observationCount.doubleValue()
     doubleValue /= totalLetterCount
     observationCount.setValue(doubleValue)
   }
 
-  def increment(mapToUse : mutable.Map[Char, MutableDouble], targetChar : Char) {
+  private def increment(mapToUse : mutable.Map[Char, MutableDouble], targetChar : Char) {
     mapToUse.getOrElseUpdate(targetChar, new MutableDouble(0.0d)).increment()
   }
 
@@ -171,5 +171,5 @@ class Sentence(stringToDecode : String) extends Logging {
       return probability
   }*/
 
-  def isDoubleLetter(theChar : Char) : Boolean = {doubleLetters.contains(theChar)}
+  def isDoubleLetter(theChar : Char) = doubleLetters.contains(theChar)
 }
