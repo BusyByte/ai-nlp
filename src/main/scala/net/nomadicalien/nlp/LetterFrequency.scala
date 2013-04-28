@@ -72,7 +72,7 @@ object LetterFrequency {
    * JJ, YY, QQ, and XX are relatively non-existent but want to smooth because
    * probably not zero
    */
-  def createDoubleLetterFrequencyMap() : Map[Char, Double] = {
+  private def createDoubleLetterFrequencyMap() : Map[Char, Double] = {
     val freqMap = scala.collection.mutable.Map(
       's' -> 10600,
         'l' -> 8300,
@@ -113,7 +113,7 @@ object LetterFrequency {
   /**
    * P(x)= (count(x)+k)/(N + k|x|)
    */
-   def laplaceSmooth(countOfX : Double, totalObservationCount : Double) : Double = {
+   private def laplaceSmooth(countOfX : Double, totalObservationCount : Double) : Double = {
       val smoothingParameterK = 2.0d//estimated 2 unknown observations
       val numerator = countOfX + smoothingParameterK
       val numberValuesDoubleLetterCanTakeOn = 26.0d
@@ -134,28 +134,37 @@ object LetterFrequency {
     englishDoubleLetterFrequencies.get(target)
   }
 
-  def getBestMatchByFirstLetterFrequency(experimentalFrequency : Double, exclusions : Set[Char]) : CharProb = {
+  def getBestMatchByFirstLetterFrequency(experimentalFrequency : Double, exclusions : Set[Char]) : Option[CharProb] = {
     getBestMatchByFrequency(englishFirstLetterFrequencies, experimentalFrequency, exclusions)
   }
 
-  def getBestMatchByLetterFrequency(experimentalFrequency : Double, exclusions : Set[Char]) : CharProb =  {
+  def getBestMatchByLetterFrequency(experimentalFrequency : Double, exclusions : Set[Char]) : Option[CharProb] =  {
     getBestMatchByFrequency(englishLetterFrequencies, experimentalFrequency, exclusions)
   }
 
-  def getBestMatchByDoubleLetterFrequency(experimentalFrequency : Double, exclusions : Set[Char]) : CharProb = {
-    getBestMatchByFrequency(englishDoubleLetterFrequencies, experimentalFrequency, exclusions);
+  def getBestMatchByDoubleLetterFrequency(experimentalFrequency : Double, exclusions : Set[Char]) : Option[CharProb]= {
+    getBestMatchByFrequency(englishDoubleLetterFrequencies, experimentalFrequency, exclusions)
   }
 
   private def getBestMatchByFrequency(mapToSearch : Map[Char, Double], experimentalFrequency : Double,
-  excludedLetters : Set[Char]) : CharProb = {
+  excludedLetters : Set[Char]) : Option[CharProb] = {
 
-    val lowestFound : (Char, Double) =  mapToSearch.filterKeys {key : Char => excludedLetters.contains(key)}.minBy {p: (Char, Double) =>
-      val theoreticalFrequency = p._2
+    val lowestFound : Option[(Char, Double)] =  mapToSearch.filterKeys {key : Char => !excludedLetters.contains(key)}.mapValues { value: Double =>
+      val theoreticalFrequency = value
       val numerator : Double =  Math.abs(experimentalFrequency - theoreticalFrequency)
       val denominator : Double = Math.max(Math.abs(experimentalFrequency), Math.abs(theoreticalFrequency))
-      (numerator/denominator)
+      val newValue = (numerator/denominator)
+      newValue
+    }.reduceOption {(best, current) =>
+      if(best._2 < current._2) { best }
+      else {current}
     }
-    CharProb(lowestFound._1, lowestFound._2)
+
+     if(lowestFound.isEmpty) {
+       None
+     } else {
+       Option(CharProb(lowestFound.get._1, lowestFound.get._2))
+     }
   }
 
 }
