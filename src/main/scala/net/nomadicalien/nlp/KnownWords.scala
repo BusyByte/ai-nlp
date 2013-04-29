@@ -4,6 +4,7 @@ import scala.collection.mutable
 import java.io.{Reader, BufferedReader, InputStreamReader}
 import scala.util.parsing.input.StreamReader
 import scala.collection.mutable.ListBuffer
+import scala.io.BufferedSource
 
 /**
  * User: Shawn Garner
@@ -37,12 +38,14 @@ object KnownWords {
    loadWords
 
 
-  def loadWords {
+  private def loadWords {
     wordFiles.foreach(loadWordsFromFile(_))
   }
 
-  def loadWordsFromFile(fileName : String)  {
-    scala.io.Source.fromURL(Thread.currentThread().getContextClassLoader().getResource(fileName)).getLines().foreach {
+  private def loadWordsFromFile(fileName : String)  {
+    val stream: BufferedSource = scala.io.Source.fromInputStream(Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName), "ISO-8859-1")
+
+    stream.getLines().foreach {
       readLine : String =>
       val trimmedLine = readLine.trim()
       val length: Int = trimmedLine.length
@@ -50,20 +53,20 @@ object KnownWords {
           val listToAddTo : ListBuffer[String] = wordSizeToWords.getOrElseUpdate(length, ListBuffer[String]())
           listToAddTo += trimmedLine
       }
-
     }
+    stream.close()
   }
 
 
-  def findWord(wholeDecryptedWordString : String) : Boolean = {
-    val length = wholeDecryptedWordString.length
-    val wordList = wordSizeToWords.getOrElseUpdate(length, ListBuffer[String]())
+  def findWord(wordToSearchFor : String) : Boolean = {
+    val length = wordToSearchFor.length
+    val wordList = wordSizeToWords.getOrElse(length, ListBuffer[String]())
 
-    wordList.contains(wholeDecryptedWordString)
+    wordList.contains(wordToSearchFor)
   }
 
   def numberWordsOfSize(length : Int) : Int = {
-    val wordList = wordSizeToWords.getOrElseUpdate(length, ListBuffer[String]())
+    val wordList = wordSizeToWords.getOrElse(length, ListBuffer[String]())
     wordList.size
   }
 }

@@ -10,15 +10,15 @@ import org.junit.Assert._
  */
 class LetterFrequencyTest extends JUnitSuite {
 
-  @Test def verifyTotalProbabilityEnglishLetterFreqencies() {
+  @Test def verifyTotalProbabilityEnglishLetterFrequencies() {
     assertEquals(1.0d, LetterFrequency.englishLetterFrequencies.values.sum, 0.0001d)
   }
 
-  @Test def verifyTotalProbabilityEnglishFirstLetterFreqencies() {
+  @Test def verifyTotalProbabilityEnglishFirstLetterFrequencies() {
     assertEquals(1.0d, LetterFrequency.englishFirstLetterFrequencies.values.sum, 0.0001d)
   }
 
-  @Test def verifyTotalProbabilityEnglishDoubleLetterFreqencies() {
+  @Test def verifyTotalProbabilityEnglishDoubleLetterFrequencies() {
     assertEquals(1.0d, LetterFrequency.englishDoubleLetterFrequencies.values.sum, 0.0001d)
   }
 
