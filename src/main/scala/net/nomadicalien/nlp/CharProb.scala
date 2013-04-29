@@ -9,7 +9,7 @@ case class CharProb(letter : Char, probability : Double = 0.0d)
 object CharProb {
   /** highest probability should be first **/
   def sortByProbability(listToSort : List[CharProb]) : List[CharProb] = {
-      listToSort.sortBy(_.probability)
+      listToSort.sortBy(1.0d - _.probability)
   }
 
   /** a should be first and z should be last **/
