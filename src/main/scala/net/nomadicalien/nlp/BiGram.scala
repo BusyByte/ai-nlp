@@ -34,14 +34,10 @@ object BiGram {
     List(0.4239743d, 0.00275d, 0.0080185d, 0.0087711d, 0.3058107d, 0.0019974d, 0.0019974d, 0.0024992d, 0.0729959d, 0.0022483d, 0.0019974d, 0.0218168d, 0.0019974d, 0.0019974d, 0.0750029d, 0.0019974d, 0.0019974d, 0.0022483d, 0.0037535d, 0.0024992d, 0.0057606d, 0.0030009d, 0.0019974d, 0.0019974d, 0.0120325d, 0.0288414d)
   )
 
-  def getPreciseBigram(priorARow: Int, currentBColumn: Int) : Double = {
-    preciseBigram(priorARow)(currentBColumn)
-  }
+  def probOfCurrentGivenPrior(prior : Char, current : Char) : Double = {
+    val priorRowIndex = prior - 'a'
+    val currentColumnIndex = current - 'a'
 
-  def getPreciseBigramByChars(priorARow : Char, currentBColumn : Char) : Double = {
-    val priorARowIndex = priorARow - 'a'
-    val currentBColumnIndex = currentBColumn - 'a'
-
-    preciseBigram(priorARowIndex)(currentBColumnIndex)
+    preciseBigram(priorRowIndex)(currentColumnIndex)
   }
 }

@@ -65,7 +65,7 @@ class NLP2(stringToDecode : String) extends Randomness with Logging {
         } else if(sentence.isDoubleLetter(theChar)){
           probability.add(LetterFrequency.doubleLetterProbabilityOf(theChar).getOrElse(0.0d))
         } else {
-          probability.add(priorProbability * BiGram.getPreciseBigramByChars(priorChar, theChar))
+          probability.add(priorProbability * BiGram.probOfCurrentGivenPrior(priorChar, theChar))
         }
 
         theLettersCount.increment()
