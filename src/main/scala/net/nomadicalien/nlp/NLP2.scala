@@ -4,9 +4,7 @@ import scala.collection.mutable
 import org.apache.commons.lang3.mutable.{MutableInt, MutableDouble}
 import scala.Double
 import java.util.regex.Pattern
-import scala.util.control.Breaks._
 import net.nomadicalien.nlp.WordFrequency.WordRanking
-import scala.collection.mutable.ListBuffer
 
 /**
  * User: Shawn Garner
@@ -15,10 +13,10 @@ import scala.collection.mutable.ListBuffer
 class NLP2(stringToDecode : String) extends Randomness with Logging {
 
   def process {
-    val visitedLetters = mutable.Map[Int, mutable.Set[Char]]()
     var sentence = new Sentence(stringToDecode)
 
     while(!sentence.matches()) {
+
       val sentenceProb : Double = calculateProbablilitySentenceIsCorrect(sentence)
       logger.info("sentence prob correct = " + ProbFormatter.format(sentenceProb))
       if (sentenceProb > 0.6d) {
@@ -30,23 +28,13 @@ class NLP2(stringToDecode : String) extends Randomness with Logging {
 
       val lastSentenceDecoded : String  = sentence.toString()
 
-      val leastLikelyCorrect : Option[Char] = findLeastLikelyCorrectLetter(probabilities, Set())
-      if (leastLikelyCorrect.isEmpty) {
-        throw new OutOfOptionsException("Could not fine least likely correct")
-      }
-      val indexOfLeastLikely : Int = lastSentenceDecoded.indexOf(leastLikelyCorrect.get.toString())
-      val excludedLetters : mutable.Set[Char] = visitedLetters.getOrElseUpdate(indexOfLeastLikely, mutable.Set[Char]())
-      excludedLetters.add(leastLikelyCorrect.get)
+      val leastLikelyCorrect : Char = findLeastLikelyCorrectLetter(probabilities)
 
-      val replacement : Option[Char] = findLeastLikelyCorrectLetter(probabilities, excludedLetters.toSet)
-      if(replacement.isEmpty) {
-        throw new OutOfOptionsException("could not find a replacement character")
-      }
-      sentence = new Sentence(lastSentenceDecoded.replace(leastLikelyCorrect.get, replacement.get))
+      val replacement : Char = determineMaxProbReplacement(leastLikelyCorrect, probabilities)
+
+      sentence = sentence.swap(leastLikelyCorrect, replacement)
       sentence.logTranslation(lastSentenceDecoded)
     }
-
-
   }
 
   def calculateCharacterProbabilities(sentence: Sentence) : Map[Char, Double] = {
@@ -57,8 +45,8 @@ class NLP2(stringToDecode : String) extends Randomness with Logging {
       var priorChar : Char = '0'
       var priorProbability : Double = 0.0d
       word.zipWithIndex.foreach { case(theChar, index) =>
-        val probability : MutableDouble = probs.getOrElse(theChar, new MutableDouble(0.0d))
-        val theLettersCount : MutableInt = letterCount.getOrElse(theChar, new MutableInt(0))
+        val probability : MutableDouble = probs.getOrElseUpdate(theChar, new MutableDouble(0.0d))
+        val theLettersCount : MutableInt = letterCount.getOrElseUpdate(theChar, new MutableInt(0))
 
         if (index == 0) {
           probability.add(LetterFrequency.firstLetterProbabilityOf(theChar).getOrElse(0.0d))
@@ -100,28 +88,38 @@ class NLP2(stringToDecode : String) extends Randomness with Logging {
     probability
   }
 
-  def determineMaxProbReplacement(leastLikelyCorrect : CharProb, probabilities : Map[Char, Double], excludedLetters : Set[Char]) : Option[CharProb] = {
-    val totalExcluded = excludedLetters + leastLikelyCorrect.letter
 
-    val replacementCandidates = ('a' to 'z').filterNot(totalExcluded.contains(_)).map {theChar: Char => CharProb(theChar,probabilities.getOrElse(theChar, 0.0d))}.toList
+  def determineMaxProbReplacement(leastLikelyCorrect : Char, probabilities : Map[Char, Double]) : Char = {
+    val allReplacementCandidates = mutable.Set[Char]()
 
-    val sortedReplacementCandidates = CharProb.sortByProbability(replacementCandidates)
+    val sortedByProb = probabilities.toList.sortBy {case(theChar: Char, prob : Double) => 1.0d - prob}
+    val numLetters = sortedByProb.size
 
-    sortedReplacementCandidates.headOption
+    allReplacementCandidates.add(sortedByProb(nextInt((0.25d * numLetters).toInt))._1)
+    allReplacementCandidates.add(sortedByProb(nextInt((0.25d * numLetters).toInt))._1)
+    allReplacementCandidates.add(sortedByProb(nextInt((0.25d * numLetters).toInt))._1)
+    allReplacementCandidates.add(sortedByProb(nextInt((0.25d * numLetters).toInt))._1)
 
+    allReplacementCandidates.add(sortedByProb(nextInt((0.35d * numLetters).toInt))._1)
+    allReplacementCandidates.add(sortedByProb(nextInt((0.35d * numLetters).toInt))._1)
+
+    allReplacementCandidates.add(sortedByProb(nextInt(numLetters))._1)
+
+    val lettersNotInPhrase = ('a' to 'z').toSet.--(probabilities.keySet)
+    allReplacementCandidates.++=(lettersNotInPhrase)
+    allReplacementCandidates.-=(leastLikelyCorrect)
+    val allReplacementCandidateList = allReplacementCandidates.toList
+    allReplacementCandidateList(nextInt(allReplacementCandidateList.size))
   }
 
   //TODO: need a unit test
-  def findLeastLikelyCorrectLetter(probabilities : Map[Char, Double], excludedLetters : Set[Char]) : Option[Char] = {
-    val reducedProbabilities : Map[Char, Double] =  probabilities.filterNot {case(theChar:Char, _) => excludedLetters.contains(theChar)}
-    val sortedEntries : List[Char] = reducedProbabilities.toList.sortBy(_._2).map(_._1).toList
-    sortedEntries.headOption
+  def findLeastLikelyCorrectLetter(probabilities : Map[Char, Double]) : Char = {
+    val sortedEntries : List[Char] = probabilities.toList.sortBy(_._2).map(_._1).toList
+    sortedEntries.head
   }
 
   def letterProbabilityCorrect(foundWord : String, probabilities : Map[Char, Double]) : Double = {
-    val probabilityCorrect : Double = foundWord.map {probabilities.getOrElse(_, 0.0d)}.sum / foundWord.length
-
-
+    val probabilityCorrect : Double = foundWord.map {probabilities.getOrElse(_, 0.0d)}.product
     probabilityCorrect
   }
 
@@ -138,7 +136,6 @@ class NLP2(stringToDecode : String) extends Randomness with Logging {
 
     if (!hasVowel(wholeDecryptedWordString) || (wordSize > 1 && hasAllVowels(wholeDecryptedWordString))) {
       return probabilityCorrect
-
     }
 
     val wordRankingList : List[WordRanking] = WordFrequency.getRankingList(wordSize)

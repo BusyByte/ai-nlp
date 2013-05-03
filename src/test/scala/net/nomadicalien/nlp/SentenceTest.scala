@@ -12,6 +12,15 @@ class SentenceTest extends JUnitSuite {
 
   val sentence = new Sentence("The pretty red ball bounced along.")
 
+  @Test def verifySwap() {
+    val swappedSentence = sentence.swap('t', 'l')
+    assertEquals("lhe prelly red batt bounced atong.", swappedSentence.toString())
+  }
+
+  @Test def verifyToString() {
+    assertEquals("the pretty red ball bounced along.", sentence.toString())
+  }
+
   @Test def verifyWords() {
     val words = List("the", "pretty", "red", "ball", "bounced", "along")
     assertEquals(words, sentence.words)

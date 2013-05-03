@@ -6,5 +6,5 @@ package net.nomadicalien.nlp
  */
 trait Randomness {
   val random = new java.util.Random()
-  def nextInt(exclusiveUpperLimit : Int) = random.nextInt(exclusiveUpperLimit)
+  def nextInt(exclusiveUpperLimit : Int) = Math.abs(random.nextInt(exclusiveUpperLimit))
 }

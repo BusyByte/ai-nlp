@@ -16,6 +16,12 @@ class Sentence(stringToDecode : String) extends Logging {
   val firstLetterFrequencyMap : Map[Char, Double] = createFirstLetterFrequencyMap(words)
   val doubleLetters : Set[Char] = createDoubleLetterSet(words)
 
+  def swap(losingLetter : Char, candidateLetter : Char) : Sentence = {
+    logger.debug(s"replacing ${losingLetter} with ${candidateLetter}")
+    val substitute : Char = 26.toChar
+    val newSentence = stringToDecode.toLowerCase.replace(candidateLetter, substitute).replace(losingLetter, candidateLetter).replace(substitute, losingLetter)
+    new Sentence(newSentence)
+  }
 
   private def createDoubleLetterSet(foundWordList : List[String] ) : Set[Char] = {
     val doubleLetters = mutable.Set[Char]()
@@ -82,7 +88,7 @@ class Sentence(stringToDecode : String) extends Logging {
   }
 
   override def toString() : String  = {
-    String.format(stringToDecode.replaceAll(ALPHA_PATTERN, "%s"), words.toArray)
+    words.mkString(" ")  + "."
   }
 
   override def equals(obj : Any) : Boolean = {
@@ -95,12 +101,12 @@ class Sentence(stringToDecode : String) extends Logging {
 
 
   def logTranslation(lastSentenceDecoded : String) {
-    logger.info("ENCRYPTED[$stringToDecode]")
+    logger.info(s"ENCRYPTED\t\t[$stringToDecode]")
     if (lastSentenceDecoded != null) {
-      logger.info("LASTDECOD[$lastSentenceDecoded]")
+      logger.info(s"LAST DECODED\t[$lastSentenceDecoded]")
     }
-    logger.info("  DECODED[${this.toString()}]")
-    logger.info(" SOLUTION[$SOLUTION]")
+    logger.info(s"DECODED\t\t[${this.toString()}]")
+    logger.info(s"SOLUTION\t\t[$SOLUTION]")
   }
 
   val SOLUTION = "The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year.".toLowerCase()
