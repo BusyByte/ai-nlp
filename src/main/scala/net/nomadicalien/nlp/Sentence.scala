@@ -16,10 +16,19 @@ class Sentence(stringToDecode : String) extends Logging {
   val firstLetterFrequencyMap : Map[Char, Double] = createFirstLetterFrequencyMap(words)
   val doubleLetters : Set[Char] = createDoubleLetterSet(words)
 
+  /**
+   * Will swap letters without regard to case. <br>
+   * Will maintain the case of the letter positions of the original sentence.
+   */
   def swap(losingLetter : Char, candidateLetter : Char) : Sentence = {
     logger.debug(s"replacing ${losingLetter} with ${candidateLetter}")
+
+    val upperCaseCharIndexes : Set[Int] = stringToDecode.zipWithIndex.filter(_._1.isUpper).map(_._2).toSet
+
     val substitute : Char = 26.toChar
-    val newSentence = stringToDecode.toLowerCase.replace(candidateLetter, substitute).replace(losingLetter, candidateLetter).replace(substitute, losingLetter)
+    val newSentenceLowerCase = stringToDecode.toLowerCase.replace(candidateLetter.toLower, substitute).replace(losingLetter.toLower, candidateLetter.toLower).replace(substitute, losingLetter.toLower)
+    val newSentence = newSentenceLowerCase.zipWithIndex.map { it => if(upperCaseCharIndexes.contains(it._2)) {it._1.toUpper} else {it._1} }.mkString
+
     new Sentence(newSentence)
   }
 
@@ -88,7 +97,7 @@ class Sentence(stringToDecode : String) extends Logging {
   }
 
   override def toString() : String  = {
-    words.mkString(" ")  + "."
+    stringToDecode
   }
 
   override def equals(obj : Any) : Boolean = {
@@ -109,7 +118,7 @@ class Sentence(stringToDecode : String) extends Logging {
     logger.info(s"SOLUTION\t\t[$SOLUTION]")
   }
 
-  val SOLUTION = "The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year.".toLowerCase()
+  val SOLUTION = "The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year."
 
   def matches() : Boolean = {
     SOLUTION == this.toString()
