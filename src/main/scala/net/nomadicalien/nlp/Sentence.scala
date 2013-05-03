@@ -101,27 +101,11 @@ class Sentence(stringToDecode : String) extends Logging {
   }
 
   override def equals(obj : Any) : Boolean = {
-    toString().equals(obj.toString)
+    toString() == obj.toString
   }
 
   override def hashCode() : Int = {
     toString().hashCode()
-  }
-
-
-  def logTranslation(lastSentenceDecoded : String) {
-    logger.info(s"ENCRYPTED\t\t[$stringToDecode]")
-    if (lastSentenceDecoded != null) {
-      logger.info(s"LAST DECODED\t[$lastSentenceDecoded]")
-    }
-    logger.info(s"DECODED\t\t[${this.toString()}]")
-    logger.info(s"SOLUTION\t\t[$SOLUTION]")
-  }
-
-  val SOLUTION = "The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year."
-
-  def matches() : Boolean = {
-    SOLUTION == this.toString()
   }
 
   def isDoubleLetter(theChar : Char) = doubleLetters.contains(theChar)

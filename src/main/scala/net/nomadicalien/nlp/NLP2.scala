@@ -10,18 +10,16 @@ import net.nomadicalien.nlp.WordFrequency.WordRanking
  * User: Shawn Garner
  * Created: 4/16/13 10:22 PM
  */
-class NLP2(stringToDecode : String) extends Randomness with Logging {
+class NLP2(stringToDecode : String, solution: String) extends Randomness with Logging {
 
   def process {
     var sentence = new Sentence(stringToDecode)
 
-    while(!sentence.matches()) {
+    while(sentence.toString() != solution) {
 
       val sentenceProb : Double = calculateProbablilitySentenceIsCorrect(sentence)
       logger.info("sentence prob correct = " + ProbFormatter.format(sentenceProb))
-      if (sentenceProb > 0.6d) {
-        throw new CloseEnoughMatchException("Probability Correct is " + ProbFormatter.format(sentenceProb))
-      }
+      if (sentenceProb > 0.6d) { throw new CloseEnoughMatchException("Probability Correct is " + ProbFormatter.format(sentenceProb)) }
 
       val probabilities : Map[Char, Double] = calculateCharacterProbabilities(sentence)
       printWordProbabilities(sentence, probabilities)
@@ -33,7 +31,7 @@ class NLP2(stringToDecode : String) extends Randomness with Logging {
       val replacement : Char = determineMaxProbReplacement(leastLikelyCorrect, probabilities)
 
       sentence = sentence.swap(leastLikelyCorrect, replacement)
-      sentence.logTranslation(lastSentenceDecoded)
+      logTranslation(lastSentenceDecoded, sentence.toString())
     }
   }
 
@@ -186,5 +184,15 @@ class NLP2(stringToDecode : String) extends Randomness with Logging {
     }
 
     logger.debug(sb.toString())
+  }
+
+
+  def logTranslation(lastSentenceDecoded : String, currentSentenceDecoded : String) {
+    logger.info(s"ENCRYPTED     [$stringToDecode]")
+    if (lastSentenceDecoded != null) {
+      logger.info(s"LAST DECODED  [$lastSentenceDecoded]")
+    }
+    logger.info(s"DECODED       [$currentSentenceDecoded]")
+    logger.info(s"SOLUTION      [$solution]")
   }
 }
