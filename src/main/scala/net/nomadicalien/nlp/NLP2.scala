@@ -1,7 +1,6 @@
 package net.nomadicalien.nlp
 
 import scala.collection.mutable
-import org.apache.commons.lang3.mutable.{MutableInt, MutableDouble}
 import scala.Double
 import java.util.regex.Pattern
 import net.nomadicalien.nlp.WordFrequency.WordRanking
@@ -10,87 +9,139 @@ import net.nomadicalien.nlp.WordFrequency.WordRanking
  * User: Shawn Garner
  * Created: 4/16/13 10:22 PM
  */
-class NLP2(stringToDecode : String, solution: String) extends Randomness with Logging {
+class NLP2(stringToDecode: String, solution: String) extends Randomness with Logging {
 
-  def process {
-    var sentence = new Sentence(stringToDecode)
+  def sentenceOrdering = new Ordering[Sentence] {
+    def compare(lhs: Sentence, rhs: Sentence): Int = {
+      val lhsPriority = calculateProbablilitySentenceIsCorrect(lhs)
+      val rhsPriority = calculateProbablilitySentenceIsCorrect(rhs)
 
-    while(sentence.toString() != solution) {
-
-      val sentenceProb : Double = calculateProbablilitySentenceIsCorrect(sentence)
-      logger.info("sentence prob correct = " + ProbFormatter.format(sentenceProb))
-      if (sentenceProb > 0.6d) { throw new CloseEnoughMatchException("Probability Correct is " + ProbFormatter.format(sentenceProb)) }
-
-      val probabilities : Map[Char, Double] = calculateCharacterProbabilities(sentence)
-      printWordProbabilities(sentence, probabilities)
-
-      val lastSentenceDecoded : String  = sentence.toString()
-
-      val leastLikelyCorrect : Char = findLeastLikelyCorrectLetter(probabilities)
-
-      val replacement : Char = determineMaxProbReplacement(leastLikelyCorrect, probabilities)
-
-      sentence = sentence.swap(leastLikelyCorrect, replacement)
-      logTranslation(lastSentenceDecoded, sentence.toString())
-    }
-  }
-
-  def calculateCharacterProbabilities(sentence: Sentence) : Map[Char, Double] = {
-    val probs = mutable.Map[Char, MutableDouble]()
-    val letterCount = mutable.Map[Char, MutableInt]()
-
-    sentence.words.foreach { word : String =>
-      var priorChar : Char = '0'
-      var priorProbability : Double = 0.0d
-      word.zipWithIndex.foreach { case(theChar, index) =>
-        val probability : MutableDouble = probs.getOrElseUpdate(theChar, new MutableDouble(0.0d))
-        val theLettersCount : MutableInt = letterCount.getOrElseUpdate(theChar, new MutableInt(0))
-
-        if (index == 0) {
-          probability.add(LetterFrequency.firstLetterProbabilityOf(theChar).getOrElse(0.0d))
-        } else if(sentence.isDoubleLetter(theChar)){
-          probability.add(LetterFrequency.doubleLetterProbabilityOf(theChar).getOrElse(0.0d))
-        } else {
-          probability.add(priorProbability * BiGram.probOfCurrentGivenPrior(priorChar, theChar))
-        }
-
-        theLettersCount.increment()
-        priorProbability =  probability.doubleValue() / theLettersCount.doubleValue()
-        priorChar = theChar
+      if (lhsPriority < rhsPriority) {
+        -1
+      }
+      else if (lhsPriority > rhsPriority) {
+        1
+      }
+      else {
+        0
       }
     }
 
-    probs.foreach {f: (Char, MutableDouble)  =>
-      val probability : MutableDouble = f._2
-      val theLetterCount : MutableInt = letterCount.get(f._1).getOrElse(new MutableInt(0))
-      val newProbability = probability.doubleValue() / theLetterCount.doubleValue()
-      probability.setValue(newProbability)
+  }
+
+  class SentenceCoolOff(val sentence : Sentence) {
+    var coolOff : Int = 100
+    def cool = {coolOff = coolOff - 1}
+    def cooledOff : Boolean = {coolOff <= 0}
+  }
+
+  def process {
+    val coolOff = mutable.Queue[SentenceCoolOff]()
+    val visitedSentences = mutable.Set[Sentence]()
+    val prioritizedCandidates = mutable.PriorityQueue[Sentence]()(sentenceOrdering)
+
+    prioritizedCandidates.enqueue(new Sentence(stringToDecode))
+    var lastSentence: Sentence = null
+
+    while (prioritizedCandidates.nonEmpty) {
+      val currentSentence = prioritizedCandidates.dequeue()
+
+      logTranslation(lastSentence, currentSentence)
+      val sentenceProb: Double = calculateProbablilitySentenceIsCorrect(currentSentence)
+      logger.info("sentence prob correct = " + ProbFormatter.format(sentenceProb))
+      if (sentenceProb > 0.6d) {
+        throw new CloseEnoughMatchException("Probability Correct is " + ProbFormatter.format(sentenceProb) + ": " + currentSentence)
+      }
+
+      val probabilities: Map[Char, Double] = calculateCharacterProbabilities(currentSentence)
+      printWordProbabilities(currentSentence, probabilities)
+
+      lastSentence = currentSentence
+      visitedSentences.add(currentSentence)
+      coolOff.enqueue(new SentenceCoolOff(currentSentence))
+
+      (0 until 20).foreach {
+        it =>
+          val leastLikelyCorrect: Char = findLeastLikelyCorrectLetter(probabilities)
+          val replacement: Char = determineMaxProbReplacement(leastLikelyCorrect, probabilities)
+          val newSentence = currentSentence.swap(leastLikelyCorrect, replacement)
+          if (!visitedSentences.contains(newSentence)) {
+            prioritizedCandidates.enqueue(newSentence)
+          }
+      }
+
+      val topOfStack = coolOff.front
+      topOfStack.cool
+      if(topOfStack.cooledOff) {
+        prioritizedCandidates.enqueue(coolOff.dequeue().sentence)
+      }
+
     }
 
 
-    probs.toList.map { f:(Char, MutableDouble) => (f._1, f._2.doubleValue())}.toMap
+  }
+
+  def calculateCharacterProbabilities(sentence: Sentence): Map[Char, Double] = {
+    val probs = mutable.Map[Char, mutable.ListBuffer[Double]]()
+
+    sentence.words.foreach {
+      word: String =>
+        var priorLetter: Char = '0'
+        var priorProbability: Double = 0.0d
+        word.zipWithIndex.foreach {
+          case (currentLetter, index) =>
+            val currentProbabilityList = probs.getOrElseUpdate(currentLetter, mutable.ListBuffer[Double]())
+            val newProbability: Double = {
+              if (index == 0) {
+                LetterFrequency.firstLetterProbabilityOf(currentLetter).getOrElse(0.0d)
+              } else if (sentence.isDoubleLetter(currentLetter) && priorLetter == currentLetter) {
+                //TODO: this case may not be actually needed as BiGram case below may handle it
+                val doubleLetterProbability: Double = LetterFrequency.doubleLetterProbabilityOf(currentLetter).getOrElse(0.0d) * priorProbability
+                //p(c|p) = (prob (p|c) * p(c)) / p(p)
+                doubleLetterProbability
+              } else {
+                //p(c|p) = (prob (p|c) * p(c)) / p(p)
+                val probabilityOfCurrentGivenPrior: Double = BiGram.probOfAGivenB(currentLetter, priorLetter) * priorProbability
+                probabilityOfCurrentGivenPrior
+              }
+
+            }
+
+            currentProbabilityList += newProbability
+            priorProbability = newProbability
+            priorLetter = currentLetter
+        }
+    }
+
+    probs.mapValues {
+      list => list.sum / list.size
+    }.toMap
   }
 
 
-  def calculateProbablilitySentenceIsCorrect(sentence : Sentence) : Double = {
-    val probabilities : Map[Char, Double] = calculateCharacterProbabilities(sentence)
-    val probability : Double =
-      sentence.words.map {  word : String =>
-        var wordProb : Double = 1.0d
-        word.foreach {theChar : Char =>
-          wordProb *= probabilities.get(theChar).getOrElse(0.0d)
-        }
-        wordProb
+  def calculateProbablilitySentenceIsCorrect(sentence: Sentence): Double = {
+    val probabilities: Map[Char, Double] = calculateCharacterProbabilities(sentence)
+    val probability: Double =
+      sentence.words.map {
+        word: String =>
+          var wordProb: Double = 1.0d
+          word.foreach {
+            theChar: Char =>
+              wordProb *= probabilities.get(theChar).getOrElse(0.0d)
+          }
+          wordProb
       }.sum / sentence.words.length
 
     probability
   }
 
 
-  def determineMaxProbReplacement(leastLikelyCorrect : Char, probabilities : Map[Char, Double]) : Char = {
+  def determineMaxProbReplacement(leastLikelyCorrect: Char, probabilities: Map[Char, Double]): Char = {
     val allReplacementCandidates = mutable.Set[Char]()
 
-    val sortedByProb = probabilities.toList.sortBy {case(theChar: Char, prob : Double) => 1.0d - prob}
+    val sortedByProb = probabilities.toList.sortBy {
+      case (theChar: Char, prob: Double) => 1.0d - prob
+    }
     val numLetters = sortedByProb.size
 
     allReplacementCandidates.add(sortedByProb(nextInt((0.25d * numLetters).toInt))._1)
@@ -110,24 +161,31 @@ class NLP2(stringToDecode : String, solution: String) extends Randomness with Lo
     allReplacementCandidateList(nextInt(allReplacementCandidateList.size))
   }
 
-  //TODO: need a unit test
-  def findLeastLikelyCorrectLetter(probabilities : Map[Char, Double]) : Char = {
-    val sortedEntries : List[Char] = probabilities.toList.sortBy(_._2).map(_._1).toList
-    sortedEntries.head
+
+  def findLeastLikelyCorrectLetter(probabilities: Map[Char, Double]): Char = {
+    val sortedEntries: List[Char] = probabilities.toList.sortBy(_._2).map(_._1).toList
+    sortedEntries(nextInt(3))
   }
 
-  def letterProbabilityCorrect(foundWord : String, probabilities : Map[Char, Double]) : Double = {
-    val probabilityCorrect : Double = foundWord.map {probabilities.getOrElse(_, 0.0d)}.product
+  def letterProbabilityCorrect(foundWord: String, probabilities: Map[Char, Double]): Double = {
+    val probabilityCorrect: Double = foundWord.map {
+      probabilities.getOrElse(_, 0.0d)
+    }.product
     probabilityCorrect
   }
 
   val vowelPattern = Pattern.compile("(.*)([aAeEiIoOuUyY]+)(.*)")
   val onlyVowelPattern = Pattern.compile("[aAeEiIoOuUyY]+")
 
-  def hasVowel(wholeDecriptedWordString : String) : Boolean = {vowelPattern.matcher(wholeDecriptedWordString).matches()}
-  def hasAllVowels(wholeDecriptedWordString : String) : Boolean = {onlyVowelPattern.matcher(wholeDecriptedWordString).matches()}
+  def hasVowel(wholeDecriptedWordString: String): Boolean = {
+    vowelPattern.matcher(wholeDecriptedWordString).matches()
+  }
 
-  def determineProbabilityWordIsCorrect(wholeDecryptedWordString : String,  probabilities : Map[Char, Double]) : Double =  {
+  def hasAllVowels(wholeDecriptedWordString: String): Boolean = {
+    onlyVowelPattern.matcher(wholeDecriptedWordString).matches()
+  }
+
+  def determineProbabilityWordIsCorrect(wholeDecryptedWordString: String, probabilities: Map[Char, Double]): Double = {
 
     var probabilityCorrect = 0.0d
     val wordSize = wholeDecryptedWordString.length
@@ -136,13 +194,14 @@ class NLP2(stringToDecode : String, solution: String) extends Randomness with Lo
       return probabilityCorrect
     }
 
-    val wordRankingList : List[WordRanking] = WordFrequency.getRankingList(wordSize)
+    val wordRankingList: List[WordRanking] = WordFrequency.getRankingList(wordSize)
 
-    val wordRanking : Option[WordRanking] =  wordRankingList.find { theWordRanking : WordRanking =>
-      theWordRanking.word.equalsIgnoreCase(wholeDecryptedWordString)
+    val wordRanking: Option[WordRanking] = wordRankingList.find {
+      theWordRanking: WordRanking =>
+        theWordRanking.word.equalsIgnoreCase(wholeDecryptedWordString)
     }
 
-    if(wordRanking.isDefined) {
+    if (wordRanking.isDefined) {
       probabilityCorrect = wordRanking.get.probability
     } else {
       val foundWord = KnownWords.findWord(wholeDecryptedWordString)
@@ -159,40 +218,40 @@ class NLP2(stringToDecode : String, solution: String) extends Randomness with Lo
     probabilityCorrect
   }
 
-  def printWordProbabilities(sentence : Sentence , probabilities : Map[Char, Double]) {
+  def printWordProbabilities(sentence: Sentence, probabilities: Map[Char, Double]) {
     val sb = new StringBuilder()
-    sentence.words.foreach { foundWord : String =>
-      sb.append("\n")
-      sb.append(foundWord)
-      sb.append("\n")
-      sb.append("letter prob")
-      sb.append("=")
-      sb.append(ProbFormatter.format(letterProbabilityCorrect(foundWord, probabilities)))
-      sb.append(",")
-      sb.append("word prob")
-      sb.append("=")
-      sb.append(ProbFormatter.format(determineProbabilityWordIsCorrect(foundWord, probabilities)))
-      sb.append("\n")
-      foundWord.foreach { letter : Char =>
-        sb.append("[")
-        sb.append(letter)
+    sentence.words.foreach {
+      foundWord: String =>
+        sb.append("\n")
+        sb.append(foundWord)
+        sb.append("\n")
+        sb.append("letter prob")
         sb.append("=")
-        sb.append(ProbFormatter.format(probabilities.getOrElse(letter, 0.0d)))
-        sb.append("]")
-      }
-      sb.append("\n\n")
+        sb.append(ProbFormatter.format(letterProbabilityCorrect(foundWord, probabilities)))
+        sb.append(",")
+        sb.append("word prob")
+        sb.append("=")
+        sb.append(ProbFormatter.format(determineProbabilityWordIsCorrect(foundWord, probabilities)))
+        sb.append("\n")
+        foundWord.foreach {
+          letter: Char =>
+            sb.append("[")
+            sb.append(letter)
+            sb.append("=")
+            sb.append(ProbFormatter.format(probabilities.getOrElse(letter, 0.0d)))
+            sb.append("]")
+        }
+        sb.append("\n\n")
     }
 
     logger.debug(sb.toString())
   }
 
 
-  def logTranslation(lastSentenceDecoded : String, currentSentenceDecoded : String) {
+  def logTranslation(lastSentence: Sentence, currentSentence: Sentence) {
     logger.info(s"ENCRYPTED     [$stringToDecode]")
-    if (lastSentenceDecoded != null) {
-      logger.info(s"LAST DECODED  [$lastSentenceDecoded]")
-    }
-    logger.info(s"DECODED       [$currentSentenceDecoded]")
+    logger.info(s"LAST DECODED  [$lastSentence]")
+    logger.info(s"DECODED       [$currentSentence]")
     logger.info(s"SOLUTION      [$solution]")
   }
 }
