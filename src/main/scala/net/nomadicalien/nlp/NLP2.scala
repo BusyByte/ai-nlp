@@ -30,26 +30,31 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
   }
 
   class SentenceCoolOff(val sentence : Sentence) {
-    var coolOff : Int = 100
+    var coolOff : Int = 10
     def cool = {coolOff = coolOff - 1}
     def cooledOff : Boolean = {coolOff <= 0}
   }
 
   def process {
+    val solutionSentence = new Sentence(solution)
     val coolOff = mutable.Queue[SentenceCoolOff]()
     val visitedSentences = mutable.Set[Sentence]()
-    val prioritizedCandidates = mutable.PriorityQueue[Sentence]()(sentenceOrdering)
+    var prioritizedCandidates = mutable.PriorityQueue[Sentence]()(sentenceOrdering)
 
     prioritizedCandidates.enqueue(new Sentence(stringToDecode))
     var lastSentence: Sentence = null
 
     while (prioritizedCandidates.nonEmpty) {
+      logger.debug("CoolOffSize=" + coolOff.size)
+      logger.debug("NumVisitedSentences=" + visitedSentences.size)
+      logger.debug("NumCandidates=" + prioritizedCandidates.size)
+
       val currentSentence = prioritizedCandidates.dequeue()
 
       logTranslation(lastSentence, currentSentence)
       val sentenceProb: Double = calculateProbablilitySentenceIsCorrect(currentSentence)
       logger.info("sentence prob correct = " + ProbFormatter.format(sentenceProb))
-      if (sentenceProb > 0.6d) {
+      if (sentenceProb > 0.6d || solutionSentence == currentSentence) {
         throw new CloseEnoughMatchException("Probability Correct is " + ProbFormatter.format(sentenceProb) + ": " + currentSentence)
       }
 
@@ -76,6 +81,8 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
         prioritizedCandidates.enqueue(coolOff.dequeue().sentence)
       }
 
+      prioritizedCandidates = prioritizedCandidates.take(10000)
+
     }
 
 
@@ -96,12 +103,12 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
                 LetterFrequency.firstLetterProbabilityOf(currentLetter).getOrElse(0.0d)
               } else if (sentence.isDoubleLetter(currentLetter) && priorLetter == currentLetter) {
                 //TODO: this case may not be actually needed as BiGram case below may handle it
-                val doubleLetterProbability: Double = LetterFrequency.doubleLetterProbabilityOf(currentLetter).getOrElse(0.0d) * priorProbability
+                val doubleLetterProbability: Double = LetterFrequency.doubleLetterProbabilityOf(currentLetter).getOrElse(0.0d)
                 //p(c|p) = (prob (p|c) * p(c)) / p(p)
                 doubleLetterProbability
               } else {
                 //p(c|p) = (prob (p|c) * p(c)) / p(p)
-                val probabilityOfCurrentGivenPrior: Double = BiGram.probOfAGivenB(currentLetter, priorLetter) * priorProbability
+                val probabilityOfCurrentGivenPrior: Double = BiGram.probOfAGivenB(currentLetter, priorLetter)
                 probabilityOfCurrentGivenPrior
               }
 
@@ -130,7 +137,7 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
               wordProb *= probabilities.get(theChar).getOrElse(0.0d)
           }
           wordProb
-      }.sum / sentence.words.length
+      }.product
 
     probability
   }
