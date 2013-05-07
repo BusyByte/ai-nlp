@@ -2,6 +2,8 @@ package net.nomadicalien.nlp
 
 import org.apache.commons.lang3.mutable.MutableDouble
 import scala.collection.mutable
+import net.nomadicalien.nlp.WordFrequency.WordRanking
+import java.util.regex.Pattern
 
 /**
  * User: Shawn Garner
@@ -15,6 +17,7 @@ class Sentence(stringToDecode : String) extends Logging {
   val frequencyMap : Map[Char, Double] = createLetterFrequencyMap(words)
   val firstLetterFrequencyMap : Map[Char, Double] = createFirstLetterFrequencyMap(words)
   val doubleLetters : Set[Char] = createDoubleLetterSet(words)
+  val letterProbabilities = calculateCharacterProbabilities(words)
 
   /**
    * Will swap letters without regard to case. <br>
@@ -106,6 +109,138 @@ class Sentence(stringToDecode : String) extends Logging {
 
   override def hashCode() : Int = {
     toString().hashCode()
+  }
+
+  def calculateCharacterProbabilities(foundWords : List[String]): Map[Char, Double] = {
+    val probs = mutable.Map[Char, mutable.ListBuffer[Double]]()
+
+    foundWords.foreach {
+      word: String =>
+        var priorLetter: Char = '0'
+        var priorProbability: Double = 0.0d
+        word.zipWithIndex.foreach {
+          case (currentLetter, index) =>
+            val currentProbabilityList = probs.getOrElseUpdate(currentLetter, mutable.ListBuffer[Double]())
+            val newProbability: Double = {
+              if (index == 0) {
+                LetterFrequency.firstLetterProbabilityOf(currentLetter).getOrElse(0.0d)
+              } else if (isDoubleLetter(currentLetter) && priorLetter == currentLetter) {
+                //TODO: this case may not be actually needed as BiGram case below may handle it
+                val doubleLetterProbability: Double = LetterFrequency.doubleLetterProbabilityOf(currentLetter).getOrElse(0.0d)
+                //p(c|p) = (prob (p|c) * p(c)) / p(p)
+                doubleLetterProbability
+              } else {
+                //p(c|p) = (prob (p|c) * p(c)) / p(p)
+                val probabilityOfCurrentGivenPrior: Double = BiGram.probOfAGivenB(currentLetter, priorLetter)
+                probabilityOfCurrentGivenPrior
+              }
+            }
+
+            currentProbabilityList += newProbability
+            priorProbability = newProbability
+            priorLetter = currentLetter
+        }
+    }
+
+    probs.mapValues {
+      list => list.sum / list.size
+    }.toMap
+  }
+
+  def printWordProbabilities() {
+    val sb = new StringBuilder()
+    this.words.foreach {
+      foundWord: String =>
+        sb.append("\n")
+        sb.append(foundWord)
+        sb.append("\n")
+        sb.append("letter prob")
+        sb.append("=")
+        sb.append(ProbFormatter.format(letterProbabilityCorrect(foundWord, letterProbabilities)))
+        sb.append(",")
+        sb.append("word prob")
+        sb.append("=")
+        sb.append(ProbFormatter.format(determineProbabilityWordIsCorrect(foundWord, letterProbabilities)))
+        sb.append("\n")
+        foundWord.foreach {
+          letter: Char =>
+            sb.append("[")
+            sb.append(letter)
+            sb.append("=")
+            sb.append(ProbFormatter.format(letterProbabilities.getOrElse(letter, 0.0d)))
+            sb.append("]")
+        }
+        sb.append("\n\n")
+    }
+
+    logger.debug(sb.toString())
+  }
+
+  def letterProbabilityCorrect(foundWord: String, probabilities: Map[Char, Double]): Double = {
+    val probabilityCorrect: Double = foundWord.map {
+      probabilities.getOrElse(_, 0.0d)
+    }.product
+    probabilityCorrect
+  }
+
+  def determineProbabilityWordIsCorrect(wholeDecryptedWordString: String, probabilities: Map[Char, Double]): Double = {
+
+    var probabilityCorrect = 0.0d
+    val wordSize = wholeDecryptedWordString.length
+
+    if (!hasVowel(wholeDecryptedWordString) || (wordSize > 1 && hasAllVowels(wholeDecryptedWordString))) {
+      return probabilityCorrect
+    }
+
+    val wordRankingList: List[WordRanking] = WordFrequency.getRankingList(wordSize)
+
+    val wordRanking: Option[WordRanking] = wordRankingList.find {
+      theWordRanking: WordRanking =>
+        theWordRanking.word.equalsIgnoreCase(wholeDecryptedWordString)
+    }
+
+    if (wordRanking.isDefined) {
+      probabilityCorrect = wordRanking.get.probability
+    } else {
+      val foundWord = KnownWords.findWord(wholeDecryptedWordString)
+      if (foundWord) {
+        val numWordsOfSize = KnownWords.numberWordsOfSize(wordSize)
+        probabilityCorrect = (1.0d / numWordsOfSize)
+      } else {
+        probabilityCorrect = (1.0d / WordFrequency.ESTIMATE_NUMBER_WORDS_IN_ENGLISH)
+        probabilityCorrect = Math.max(probabilityCorrect, letterProbabilityCorrect(wholeDecryptedWordString, probabilities))
+      }
+
+    }
+
+    probabilityCorrect
+  }
+
+
+  def calculateProbablilitySentenceIsCorrect(): Double = {
+    val probability: Double =
+      words.toSet.map {
+        word: String =>
+          var wordProb: Double = 1.0d
+          word.foreach {
+            theChar: Char =>
+              wordProb *= letterProbabilities.get(theChar).getOrElse(0.0d)
+          }
+          wordProb
+      }.product
+
+    probability
+  }
+
+  val vowelPattern = Pattern.compile("(.*)([aAeEiIoOuUyY]+)(.*)")
+  val onlyVowelPattern = Pattern.compile("[aAeEiIoOuUyY]+")
+
+  def hasVowel(wholeDecriptedWordString: String): Boolean = {
+    vowelPattern.matcher(wholeDecriptedWordString).matches()
+  }
+
+  def hasAllVowels(wholeDecriptedWordString: String): Boolean = {
+    onlyVowelPattern.matcher(wholeDecriptedWordString).matches()
   }
 
   def isDoubleLetter(theChar : Char) = doubleLetters.contains(theChar)

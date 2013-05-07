@@ -13,8 +13,8 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
 
   def sentenceOrdering = new Ordering[Sentence] {
     def compare(lhs: Sentence, rhs: Sentence): Int = {
-      val lhsPriority = calculateProbablilitySentenceIsCorrect(lhs)
-      val rhsPriority = calculateProbablilitySentenceIsCorrect(rhs)
+      val lhsPriority = lhs.calculateProbablilitySentenceIsCorrect()
+      val rhsPriority = rhs.calculateProbablilitySentenceIsCorrect()
 
       if (lhsPriority < rhsPriority) {
         -1
@@ -52,14 +52,13 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
       val currentSentence = prioritizedCandidates.dequeue()
 
       logTranslation(lastSentence, currentSentence)
-      val sentenceProb: Double = calculateProbablilitySentenceIsCorrect(currentSentence)
+      val sentenceProb: Double = currentSentence.calculateProbablilitySentenceIsCorrect()
       logger.info("sentence prob correct = " + ProbFormatter.format(sentenceProb))
       if (sentenceProb > 0.6d || solutionSentence == currentSentence) {
         throw new CloseEnoughMatchException("Probability Correct is " + ProbFormatter.format(sentenceProb) + ": " + currentSentence)
       }
 
-      val probabilities: Map[Char, Double] = calculateCharacterProbabilities(currentSentence)
-      printWordProbabilities(currentSentence, probabilities)
+      currentSentence.printWordProbabilities()
 
       lastSentence = currentSentence
       visitedSentences.add(currentSentence)
@@ -67,8 +66,8 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
 
       (0 until 20).foreach {
         it =>
-          val leastLikelyCorrect: Char = findLeastLikelyCorrectLetter(probabilities)
-          val replacement: Char = determineMaxProbReplacement(leastLikelyCorrect, probabilities)
+          val leastLikelyCorrect: Char = findLeastLikelyCorrectLetter(currentSentence.letterProbabilities)
+          val replacement: Char = determineMaxProbReplacement(leastLikelyCorrect, currentSentence.letterProbabilities)
           val newSentence = currentSentence.swap(leastLikelyCorrect, replacement)
           if (!visitedSentences.contains(newSentence)) {
             prioritizedCandidates.enqueue(newSentence)
@@ -81,65 +80,11 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
         prioritizedCandidates.enqueue(coolOff.dequeue().sentence)
       }
 
-      prioritizedCandidates = prioritizedCandidates.take(10000)
+      prioritizedCandidates = prioritizedCandidates.take(100000)
 
     }
 
 
-  }
-
-  def calculateCharacterProbabilities(sentence: Sentence): Map[Char, Double] = {
-    val probs = mutable.Map[Char, mutable.ListBuffer[Double]]()
-
-    sentence.words.foreach {
-      word: String =>
-        var priorLetter: Char = '0'
-        var priorProbability: Double = 0.0d
-        word.zipWithIndex.foreach {
-          case (currentLetter, index) =>
-            val currentProbabilityList = probs.getOrElseUpdate(currentLetter, mutable.ListBuffer[Double]())
-            val newProbability: Double = {
-              if (index == 0) {
-                LetterFrequency.firstLetterProbabilityOf(currentLetter).getOrElse(0.0d)
-              } else if (sentence.isDoubleLetter(currentLetter) && priorLetter == currentLetter) {
-                //TODO: this case may not be actually needed as BiGram case below may handle it
-                val doubleLetterProbability: Double = LetterFrequency.doubleLetterProbabilityOf(currentLetter).getOrElse(0.0d)
-                //p(c|p) = (prob (p|c) * p(c)) / p(p)
-                doubleLetterProbability
-              } else {
-                //p(c|p) = (prob (p|c) * p(c)) / p(p)
-                val probabilityOfCurrentGivenPrior: Double = BiGram.probOfAGivenB(currentLetter, priorLetter)
-                probabilityOfCurrentGivenPrior
-              }
-
-            }
-
-            currentProbabilityList += newProbability
-            priorProbability = newProbability
-            priorLetter = currentLetter
-        }
-    }
-
-    probs.mapValues {
-      list => list.sum / list.size
-    }.toMap
-  }
-
-
-  def calculateProbablilitySentenceIsCorrect(sentence: Sentence): Double = {
-    val probabilities: Map[Char, Double] = calculateCharacterProbabilities(sentence)
-    val probability: Double =
-      sentence.words.map {
-        word: String =>
-          var wordProb: Double = 1.0d
-          word.foreach {
-            theChar: Char =>
-              wordProb *= probabilities.get(theChar).getOrElse(0.0d)
-          }
-          wordProb
-      }.product
-
-    probability
   }
 
 
@@ -173,87 +118,6 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
     val sortedEntries: List[Char] = probabilities.toList.sortBy(_._2).map(_._1).toList
     sortedEntries(nextInt(3))
   }
-
-  def letterProbabilityCorrect(foundWord: String, probabilities: Map[Char, Double]): Double = {
-    val probabilityCorrect: Double = foundWord.map {
-      probabilities.getOrElse(_, 0.0d)
-    }.product
-    probabilityCorrect
-  }
-
-  val vowelPattern = Pattern.compile("(.*)([aAeEiIoOuUyY]+)(.*)")
-  val onlyVowelPattern = Pattern.compile("[aAeEiIoOuUyY]+")
-
-  def hasVowel(wholeDecriptedWordString: String): Boolean = {
-    vowelPattern.matcher(wholeDecriptedWordString).matches()
-  }
-
-  def hasAllVowels(wholeDecriptedWordString: String): Boolean = {
-    onlyVowelPattern.matcher(wholeDecriptedWordString).matches()
-  }
-
-  def determineProbabilityWordIsCorrect(wholeDecryptedWordString: String, probabilities: Map[Char, Double]): Double = {
-
-    var probabilityCorrect = 0.0d
-    val wordSize = wholeDecryptedWordString.length
-
-    if (!hasVowel(wholeDecryptedWordString) || (wordSize > 1 && hasAllVowels(wholeDecryptedWordString))) {
-      return probabilityCorrect
-    }
-
-    val wordRankingList: List[WordRanking] = WordFrequency.getRankingList(wordSize)
-
-    val wordRanking: Option[WordRanking] = wordRankingList.find {
-      theWordRanking: WordRanking =>
-        theWordRanking.word.equalsIgnoreCase(wholeDecryptedWordString)
-    }
-
-    if (wordRanking.isDefined) {
-      probabilityCorrect = wordRanking.get.probability
-    } else {
-      val foundWord = KnownWords.findWord(wholeDecryptedWordString)
-      if (foundWord) {
-        val numWordsOfSize = KnownWords.numberWordsOfSize(wordSize)
-        probabilityCorrect = (1.0d / numWordsOfSize)
-      } else {
-        probabilityCorrect = (1.0d / WordFrequency.ESTIMATE_NUMBER_WORDS_IN_ENGLISH)
-        probabilityCorrect = Math.max(probabilityCorrect, letterProbabilityCorrect(wholeDecryptedWordString, probabilities))
-      }
-
-    }
-
-    probabilityCorrect
-  }
-
-  def printWordProbabilities(sentence: Sentence, probabilities: Map[Char, Double]) {
-    val sb = new StringBuilder()
-    sentence.words.foreach {
-      foundWord: String =>
-        sb.append("\n")
-        sb.append(foundWord)
-        sb.append("\n")
-        sb.append("letter prob")
-        sb.append("=")
-        sb.append(ProbFormatter.format(letterProbabilityCorrect(foundWord, probabilities)))
-        sb.append(",")
-        sb.append("word prob")
-        sb.append("=")
-        sb.append(ProbFormatter.format(determineProbabilityWordIsCorrect(foundWord, probabilities)))
-        sb.append("\n")
-        foundWord.foreach {
-          letter: Char =>
-            sb.append("[")
-            sb.append(letter)
-            sb.append("=")
-            sb.append(ProbFormatter.format(probabilities.getOrElse(letter, 0.0d)))
-            sb.append("]")
-        }
-        sb.append("\n\n")
-    }
-
-    logger.debug(sb.toString())
-  }
-
 
   def logTranslation(lastSentence: Sentence, currentSentence: Sentence) {
     logger.info(s"ENCRYPTED     [$stringToDecode]")
