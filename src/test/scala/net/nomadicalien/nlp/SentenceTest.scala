@@ -32,7 +32,7 @@ class SentenceTest extends JUnitSuite {
   }
 
   @Test def verifyLetterFrequencyMapTotalProbability() {
-     assertEquals(1.0d, sentence.frequencyMap.values.sum, 0.0001d);
+     assertEquals(1.0d, sentence.frequencyMap.values.sum, 0.0001d)
   }
 
   @Test def verifyFirstLetterFrequencyMapLetters() {
@@ -41,7 +41,7 @@ class SentenceTest extends JUnitSuite {
   }
 
   @Test def verifyFistLetterFrequencyMapTotalProbability() {
-    assertEquals(1.0d, sentence.firstLetterFrequencyMap.values.sum, 0.0001d);
+    assertEquals(1.0d, sentence.firstLetterFrequencyMap.values.sum, 0.0001d)
   }
 
   @Test def verifyDoubleLetterFrequencyMapLetters() {
@@ -57,5 +57,11 @@ class SentenceTest extends JUnitSuite {
     assertFalse(sentence.isDoubleLetter('a'))
   }
 
+  @Test def verifyProbabilityCorrect() {
+    val solutionSentence = new Sentence("The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year.")
+    //solutionSentence.printWordProbabilities()
+    val probability: Double = solutionSentence.probablilityCorrect()
+    assertEquals(0.0011d, probability, 0.0001d)
+  }
 
 }

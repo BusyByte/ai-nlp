@@ -2,8 +2,6 @@ package net.nomadicalien.nlp
 
 import scala.collection.mutable
 import scala.Double
-import java.util.regex.Pattern
-import net.nomadicalien.nlp.WordFrequency.WordRanking
 
 /**
  * User: Shawn Garner
@@ -13,8 +11,8 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
 
   def sentenceOrdering = new Ordering[Sentence] {
     def compare(lhs: Sentence, rhs: Sentence): Int = {
-      val lhsPriority = lhs.calculateProbablilitySentenceIsCorrect()
-      val rhsPriority = rhs.calculateProbablilitySentenceIsCorrect()
+      val lhsPriority = lhs.probablilityCorrect()
+      val rhsPriority = rhs.probablilityCorrect()
 
       if (lhsPriority < rhsPriority) {
         -1
@@ -52,9 +50,9 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
       val currentSentence = prioritizedCandidates.dequeue()
 
       logTranslation(lastSentence, currentSentence)
-      val sentenceProb: Double = currentSentence.calculateProbablilitySentenceIsCorrect()
+      val sentenceProb: Double = currentSentence.probablilityCorrect()
       logger.info("sentence prob correct = " + ProbFormatter.format(sentenceProb))
-      if (sentenceProb > 0.6d || solutionSentence == currentSentence) {
+      if (sentenceProb > 0.0009 || solutionSentence == currentSentence) {
         throw new CloseEnoughMatchException("Probability Correct is " + ProbFormatter.format(sentenceProb) + ": " + currentSentence)
       }
 

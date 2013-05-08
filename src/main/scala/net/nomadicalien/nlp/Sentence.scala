@@ -4,6 +4,7 @@ import org.apache.commons.lang3.mutable.MutableDouble
 import scala.collection.mutable
 import net.nomadicalien.nlp.WordFrequency.WordRanking
 import java.util.regex.Pattern
+import net.nomadicalien.nlp
 
 /**
  * User: Shawn Garner
@@ -111,33 +112,37 @@ class Sentence(stringToDecode : String) extends Logging {
     toString().hashCode()
   }
 
+  def verifyProbability(probability: Double, letter : Char) {
+    if(probability > 1.0001d || probability < -0.00001d) logger.warn(s"bad calculation of a probability [$probability] for [$letter]")
+  }
+
   def calculateCharacterProbabilities(foundWords : List[String]): Map[Char, Double] = {
     val probs = mutable.Map[Char, mutable.ListBuffer[Double]]()
 
     foundWords.foreach {
       word: String =>
         var priorLetter: Char = '0'
-        var priorProbability: Double = 0.0d
         word.zipWithIndex.foreach {
           case (currentLetter, index) =>
             val currentProbabilityList = probs.getOrElseUpdate(currentLetter, mutable.ListBuffer[Double]())
             val newProbability: Double = {
               if (index == 0) {
-                LetterFrequency.firstLetterProbabilityOf(currentLetter).getOrElse(0.0d)
+                val firstLetterProbability = LetterFrequency.firstLetterProbabilityOf(currentLetter).getOrElse(0.0d)
+                verifyProbability(firstLetterProbability, currentLetter)
+                firstLetterProbability
               } else if (isDoubleLetter(currentLetter) && priorLetter == currentLetter) {
-                //TODO: this case may not be actually needed as BiGram case below may handle it
                 val doubleLetterProbability: Double = LetterFrequency.doubleLetterProbabilityOf(currentLetter).getOrElse(0.0d)
-                //p(c|p) = (prob (p|c) * p(c)) / p(p)
+                verifyProbability(doubleLetterProbability, currentLetter)
                 doubleLetterProbability
               } else {
                 //p(c|p) = (prob (p|c) * p(c)) / p(p)
-                val probabilityOfCurrentGivenPrior: Double = BiGram.probOfAGivenB(currentLetter, priorLetter)
+                val probabilityOfCurrentGivenPrior: Double = BiGram.probOfAGivenB(priorLetter, currentLetter) * LetterFrequency.probabilityOf(currentLetter).getOrElse(0.0d) / LetterFrequency.probabilityOf(priorLetter).getOrElse(0.0d)
+                verifyProbability(probabilityOfCurrentGivenPrior, currentLetter)
                 probabilityOfCurrentGivenPrior
               }
             }
 
             currentProbabilityList += newProbability
-            priorProbability = newProbability
             priorLetter = currentLetter
         }
     }
@@ -217,7 +222,7 @@ class Sentence(stringToDecode : String) extends Logging {
   }
 
 
-  def calculateProbablilitySentenceIsCorrect(): Double = {
+  def probablilityCorrect(): Double = {
     val probability: Double =
       words.toSet.map {
         word: String =>
@@ -227,7 +232,7 @@ class Sentence(stringToDecode : String) extends Logging {
               wordProb *= letterProbabilities.get(theChar).getOrElse(0.0d)
           }
           wordProb
-      }.product
+      }.sum / words.toSet.size
 
     probability
   }
