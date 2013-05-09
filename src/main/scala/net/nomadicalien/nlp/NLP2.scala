@@ -50,10 +50,10 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
       val currentSentence = prioritizedCandidates.dequeue()
 
       logTranslation(lastSentence, currentSentence)
-      val sentenceProb: Double = currentSentence.probablilityCorrect()
-      logger.info("sentence prob correct = " + ProbFormatter.format(sentenceProb))
-      if (sentenceProb > 0.0009 || solutionSentence == currentSentence) {
-        throw new CloseEnoughMatchException("Probability Correct is " + ProbFormatter.format(sentenceProb) + ": " + currentSentence)
+      val sentenceProb: Prob = currentSentence.probablilityCorrect()
+      logger.info("sentence prob correct = " + sentenceProb.format())
+      if (sentenceProb.prob > 0.60d || solutionSentence == currentSentence) {
+        throw new CloseEnoughMatchException("Probability Correct is " + sentenceProb.format() + ": " + currentSentence)
       }
 
       currentSentence.printWordProbabilities()
@@ -62,11 +62,13 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
       visitedSentences.add(currentSentence)
       coolOff.enqueue(new SentenceCoolOff(currentSentence))
 
-      (0 until 20).foreach {
-        it =>
-          val leastLikelyCorrect: Char = findLeastLikelyCorrectLetter(currentSentence.letterProbabilities)
-          val replacement: Char = determineMaxProbReplacement(leastLikelyCorrect, currentSentence.letterProbabilities)
-          val newSentence = currentSentence.swap(leastLikelyCorrect, replacement)
+      val leastLikelyWord = currentSentence.findLeastLikelyWord.toString()
+      val allCandidateReplacements = ('a' until 'z').toSet
+      (0 until 26).foreach { it =>
+          val replacee: Char = leastLikelyWord.charAt(nextInt(leastLikelyWord.size))
+          val subsetOfReplacements = (allCandidateReplacements - replacee).toList
+          val replacement: Char = subsetOfReplacements(nextInt(subsetOfReplacements.size))
+          val newSentence = currentSentence.swap(replacee, replacement)
           if (!visitedSentences.contains(newSentence)) {
             prioritizedCandidates.enqueue(newSentence)
           }
@@ -79,10 +81,7 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
       }
 
       prioritizedCandidates = prioritizedCandidates.take(100000)
-
     }
-
-
   }
 
 
