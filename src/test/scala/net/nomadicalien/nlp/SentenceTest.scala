@@ -60,7 +60,7 @@ class SentenceTest extends JUnitSuite {
   @Test def verifyProbabilityCorrect() {
     val solutionSentence = new Sentence("The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year.")
     solutionSentence.printWordProbabilities()
-    val probability: Prob = solutionSentence.probablilityCorrect()
+    val probability: Prob = solutionSentence.probabilityCorrect()
     assertEquals(0.00487d, probability.prob, 0.0001d)
   }
 

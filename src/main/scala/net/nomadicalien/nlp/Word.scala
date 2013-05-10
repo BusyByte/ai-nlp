@@ -86,11 +86,11 @@ class Word(val letters : String) {
     sb.append("\n")
     sb.append("letter prob")
     sb.append("=")
-    sb.append(probabilityCorrectByLetters)
+    sb.append(probabilityCorrectByLetters.format())
     sb.append(",")
     sb.append("word prob")
     sb.append("=")
-    sb.append(probabilityCorrectByWord)
+    sb.append(probabilityCorrectByWord.format())
     sb.append("\n")
     this.charProbs.foreach {
       charProb: CharProb =>

@@ -11,8 +11,8 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
 
   def sentenceOrdering = new Ordering[Sentence] {
     def compare(lhs: Sentence, rhs: Sentence): Int = {
-      val lhsPriority = lhs.probablilityCorrect()
-      val rhsPriority = rhs.probablilityCorrect()
+      val lhsPriority = lhs.probabilityCorrect()
+      val rhsPriority = rhs.probabilityCorrect()
 
       if (lhsPriority < rhsPriority) {
         -1
@@ -50,7 +50,7 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
       val currentSentence = prioritizedCandidates.dequeue()
 
       logTranslation(lastSentence, currentSentence)
-      val sentenceProb: Prob = currentSentence.probablilityCorrect()
+      val sentenceProb: Prob = currentSentence.probabilityCorrect()
       logger.info("sentence prob correct = " + sentenceProb.format())
       if (sentenceProb.prob > 0.60d || solutionSentence == currentSentence) {
         throw new CloseEnoughMatchException("Probability Correct is " + sentenceProb.format() + ": " + currentSentence)
@@ -82,38 +82,6 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
 
       prioritizedCandidates = prioritizedCandidates.take(100000)
     }
-  }
-
-
-  def determineMaxProbReplacement(leastLikelyCorrect: Char, probabilities: Map[Char, Double]): Char = {
-    val allReplacementCandidates = mutable.Set[Char]()
-
-    val sortedByProb = probabilities.toList.sortBy {
-      case (theChar: Char, prob: Double) => 1.0d - prob
-    }
-    val numLetters = sortedByProb.size
-
-    allReplacementCandidates.add(sortedByProb(nextInt((0.25d * numLetters).toInt))._1)
-    allReplacementCandidates.add(sortedByProb(nextInt((0.25d * numLetters).toInt))._1)
-    allReplacementCandidates.add(sortedByProb(nextInt((0.25d * numLetters).toInt))._1)
-    allReplacementCandidates.add(sortedByProb(nextInt((0.25d * numLetters).toInt))._1)
-
-    allReplacementCandidates.add(sortedByProb(nextInt((0.35d * numLetters).toInt))._1)
-    allReplacementCandidates.add(sortedByProb(nextInt((0.35d * numLetters).toInt))._1)
-
-    allReplacementCandidates.add(sortedByProb(nextInt(numLetters))._1)
-
-    val lettersNotInPhrase = ('a' to 'z').toSet.--(probabilities.keySet)
-    allReplacementCandidates.++=(lettersNotInPhrase)
-    allReplacementCandidates.-=(leastLikelyCorrect)
-    val allReplacementCandidateList = allReplacementCandidates.toList
-    allReplacementCandidateList(nextInt(allReplacementCandidateList.size))
-  }
-
-
-  def findLeastLikelyCorrectLetter(probabilities: Map[Char, Double]): Char = {
-    val sortedEntries: List[Char] = probabilities.toList.sortBy(_._2).map(_._1).toList
-    sortedEntries(nextInt(3))
   }
 
   def logTranslation(lastSentence: Sentence, currentSentence: Sentence) {
