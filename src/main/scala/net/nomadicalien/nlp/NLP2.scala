@@ -63,8 +63,8 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
       coolOff.enqueue(new SentenceCoolOff(currentSentence))
 
       val leastLikelyWord = currentSentence.findLeastLikelyWord.toString()
-      val allCandidateReplacements = ('a' until 'z').toSet
-      (0 until 26).foreach { it =>
+      val allCandidateReplacements = ('a' to 'z').toSet
+      (0 until 100).foreach { it =>
           val replacee: Char = leastLikelyWord.charAt(nextInt(leastLikelyWord.size))
           val subsetOfReplacements = (allCandidateReplacements - replacee).toList
           val replacement: Char = subsetOfReplacements(nextInt(subsetOfReplacements.size))
