@@ -34,7 +34,7 @@ class Word(val letters : String) {
           } else if (currentLetter == priorLetter) {
             LetterFrequency.doubleLetterProbabilityOf(currentLetter).getOrElse(0.0d)
           }  else {
-            BiGram.probOfAGivenB(currentLetter, priorLetter)
+            BiGram.probOfAGivenB(priorLetter, currentLetter) * LetterFrequency.probabilityOf(currentLetter).get / LetterFrequency.probabilityOf(priorLetter).get
           }
         }
       charProbStack += new CharProb(currentLetter, prob)
