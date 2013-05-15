@@ -11,8 +11,8 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
 
   def sentenceOrdering = new Ordering[Sentence] {
     def compare(lhs: Sentence, rhs: Sentence): Int = {
-      val lhsPriority = lhs.probabilityCorrect()
-      val rhsPriority = rhs.probabilityCorrect()
+      val lhsPriority = lhs.probabilityCorrect
+      val rhsPriority = rhs.probabilityCorrect
 
       if (lhsPriority < rhsPriority) {
         -1
@@ -35,7 +35,7 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
 
   def process {
     val solutionSentence = new Sentence(solution)
-    val coolOff = mutable.Queue[SentenceCoolOff]()
+    //val coolOff = mutable.Queue[SentenceCoolOff]()
     val visitedSentences = mutable.Set[Sentence]()
     var prioritizedCandidates = mutable.PriorityQueue[Sentence]()(sentenceOrdering)
 
@@ -43,15 +43,15 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
     var lastSentence: Sentence = null
 
     while (prioritizedCandidates.nonEmpty) {
-      logger.debug("CoolOffSize=" + coolOff.size)
+      //logger.debug("CoolOffSize=" + coolOff.size)
       logger.debug("NumVisitedSentences=" + visitedSentences.size)
       logger.debug("NumCandidates=" + prioritizedCandidates.size)
 
       val currentSentence = prioritizedCandidates.dequeue()
 
       logTranslation(lastSentence, currentSentence)
-      val sentenceProb: Prob = currentSentence.probabilityCorrect()
-      logger.info("sentence prob correct = " + sentenceProb.format())
+      val sentenceProb: Prob = currentSentence.probabilityCorrect
+      logger.info("sentence prob correct = " + Math.log10(sentenceProb.prob))
       if (sentenceProb.prob > 0.60d || solutionSentence == currentSentence) {
         throw new CloseEnoughMatchException("Probability Correct is " + sentenceProb.format() + ": " + currentSentence)
       }
@@ -60,7 +60,7 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
 
       lastSentence = currentSentence
       visitedSentences.add(currentSentence)
-      coolOff.enqueue(new SentenceCoolOff(currentSentence))
+      //coolOff.enqueue(new SentenceCoolOff(currentSentence))
 
       val leastLikelyWord = currentSentence.findLeastLikelyWord.toString()
       logger.debug(s"least likely word [$leastLikelyWord]")
@@ -75,13 +75,15 @@ class NLP2(stringToDecode: String, solution: String) extends Randomness with Log
           }
       }
 
-      val topOfStack = coolOff.front
+      /*val topOfStack = coolOff.front
       topOfStack.cool
       if(topOfStack.cooledOff) {
         prioritizedCandidates.enqueue(coolOff.dequeue().sentence)
-      }
+      }*/
 
-      prioritizedCandidates = prioritizedCandidates.take(100000)
+      if(prioritizedCandidates.size > 200000) {
+        prioritizedCandidates = prioritizedCandidates.take(100000)
+      }
     }
   }
 

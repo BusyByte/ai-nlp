@@ -3,6 +3,9 @@ package net.nomadicalien.nlp
 
 object Sentence {
   val substituteChar : Char = 26.toChar
+  val NON_ALPHA_PATTERN : String = "[^\\p{Alpha}]+"
+  val ALPHA_PATTERN : String = "[\\p{Alpha}]+"
+
 }
 
 /**
@@ -10,10 +13,11 @@ object Sentence {
  * Created: 4/11/13 10:49 PM
  */
 class Sentence(stringToDecode : String) extends Logging {
-  val NON_ALPHA_PATTERN : String = "[^\\p{Alpha}]+"
-  val ALPHA_PATTERN : String = "[\\p{Alpha}]+"
+  val theHashCode = stringToDecode.hashCode()
 
-  val words : Set[Word] = stringToDecode.toLowerCase.split(NON_ALPHA_PATTERN).map(new Word(_)).toSet
+  val words : Set[Word] = stringToDecode.toLowerCase.split(Sentence.NON_ALPHA_PATTERN).map(new Word(_)).toSet
+
+  val probabilityCorrect : Prob = determineProbabilityCorrect()
 
   /**
    * Will swap letters without regard to case. <br>
@@ -32,19 +36,18 @@ class Sentence(stringToDecode : String) extends Logging {
 
   def findLeastLikelyWord() : Word = {
     val wordList: List[Word] = words.toList
-    wordList.sortWith {(lhs, rhs)=> lhs.probabilityCorrectByLetters < rhs.probabilityCorrectByLetters}.head
+    wordList.sortWith {(lhs, rhs)=> lhs.probabilityCorrectByWord < rhs.probabilityCorrectByWord}.head
   }
 
   override def toString() : String  = {
     stringToDecode
   }
-
   override def equals(obj : Any) : Boolean = {
     stringToDecode == obj.toString
   }
 
   override def hashCode() : Int = {
-    stringToDecode.hashCode()
+    theHashCode
   }
 
   def printWordProbabilities() {
@@ -56,9 +59,9 @@ class Sentence(stringToDecode : String) extends Logging {
     logger.debug(sb.toString())
   }
 
-  def probabilityCorrect(): Prob = {
+  private def determineProbabilityCorrect(): Prob = {
     val probability: Double =
-      words.map(_.probabilityCorrectByLetters.prob).product
+      words.map(_.probabilityCorrectByWord.prob).product
 
     new Prob(probability)
   }

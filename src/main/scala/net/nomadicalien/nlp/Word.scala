@@ -15,12 +15,13 @@ object Word {
  * Created: 5/8/13 8:26 PM
  */
 class Word(val letters : String) {
-
+  val theHashCode = letters.hashCode
   val hasVowel  = Word.vowelPattern.matcher(letters).matches()
-  val hasAllVowels =  Word.onlyVowelPattern.matcher(letters).matches()
 
+  val hasAllVowels =  Word.onlyVowelPattern.matcher(letters).matches()
   val charProbs = determineCharProbs()
   val probabilityCorrectByLetters = determineProbCorrect()
+
   val probabilityCorrectByWord = determineProbabilityWordIsCorrect()
 
   private def determineCharProbs() : List[CharProb] = {
@@ -46,35 +47,34 @@ class Word(val letters : String) {
 
   private def determineProbCorrect() = new Prob(charProbs.map(_.probability).product)
 
+
   private def determineProbabilityWordIsCorrect(): Prob = {
 
-    var probabilityCorrect = 0.0d
     val wordSize = letters.length
 
     if (!hasVowel || (wordSize > 1 && hasAllVowels)) {
       return new Prob()
     }
-
     val wordRankingList: List[WordRanking] = WordFrequency.getRankingList(wordSize)
 
     val wordRanking: Option[WordRanking] = wordRankingList.find {
       theWordRanking: WordRanking =>
-        theWordRanking.word.equalsIgnoreCase(letters)
+        theWordRanking.word.equalsIgnoreCase(letters)//TODO: move to find method in WordFrequency to search by word
     }
 
-    if (wordRanking.isDefined) {
-      probabilityCorrect = wordRanking.get.probability
-    } else {
-      val foundWord = KnownWords.findWord(letters)
-      if (foundWord) {
-        val numWordsOfSize = KnownWords.numberWordsOfSize(wordSize)
-        probabilityCorrect = (1.0d / numWordsOfSize)
+    val probabilityCorrect : Double = {
+      if (wordRanking.isDefined) {
+        wordRanking.get.probability
       } else {
-        probabilityCorrect = (1.0d / WordFrequency.ESTIMATE_NUMBER_WORDS_IN_ENGLISH)
-        probabilityCorrect = Math.max(probabilityCorrect, probabilityCorrect)
+        val foundWord = KnownWords.findWord(letters)
+        if (foundWord) {
+          (1.0d / KnownWords.numberWordsOfSize(wordSize))
+        } else {
+          Math.max(probabilityCorrectByLetters.prob, (1.0d / WordFrequency.ESTIMATE_NUMBER_WORDS_IN_ENGLISH))
+        }
       }
-
     }
+
     new Prob(probabilityCorrect)
   }
 
@@ -105,7 +105,6 @@ class Word(val letters : String) {
     sb.toString()
   }
 
-
   override def toString() : String  = {
     letters
   }
@@ -115,7 +114,7 @@ class Word(val letters : String) {
   }
 
   override def hashCode() : Int = {
-    letters.hashCode()
+    theHashCode
   }
 
 }

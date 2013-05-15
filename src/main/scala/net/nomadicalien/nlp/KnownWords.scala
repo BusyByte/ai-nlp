@@ -1,9 +1,6 @@
 package net.nomadicalien.nlp
 
 import scala.collection.mutable
-import java.io.{Reader, BufferedReader, InputStreamReader}
-import scala.util.parsing.input.StreamReader
-import scala.collection.mutable.ListBuffer
 import scala.io.BufferedSource
 
 /**
@@ -33,16 +30,24 @@ object KnownWords {
     "american-words.95.words"
   )
 
-  val wordSizeToWords = mutable.Map[Integer, ListBuffer[String]]()
-
-   loadWords
+  val wordSizeToWords : Map[Integer, Set[String]] = loadWords
 
 
-  private def loadWords {
-    wordFiles.foreach(loadWordsFromFile(_))
+  private def loadWords : Map[Integer, Set[String]] = {
+    val accumulateSizeToWords = mutable.Map[Integer, mutable.Set[String]]()
+    wordFiles.foreach {
+      fileName =>
+        loadWordsFromFile(fileName).foreach {
+          case (key : Integer, theSetToAdd : Set[String]) =>
+           val setToAddTo = accumulateSizeToWords.getOrElseUpdate(key, mutable.Set[String]())
+           setToAddTo ++= theSetToAdd
+        }
+    }
+    accumulateSizeToWords.mapValues(_.toSet).toMap
   }
 
-  private def loadWordsFromFile(fileName : String)  {
+  private def loadWordsFromFile(fileName : String) : Map[Integer, Set[String]] = {
+    val accumulateSizeToWords = mutable.Map[Integer, mutable.Set[String]]()
     val stream: BufferedSource = scala.io.Source.fromInputStream(Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName), "ISO-8859-1")
 
     stream.getLines().foreach {
@@ -50,23 +55,24 @@ object KnownWords {
       val trimmedLine = readLine.trim()
       val length: Int = trimmedLine.length
       if (length > 0) {
-          val listToAddTo : ListBuffer[String] = wordSizeToWords.getOrElseUpdate(length, ListBuffer[String]())
-          listToAddTo += trimmedLine
+          val setToAddTo : mutable.Set[String] = accumulateSizeToWords.getOrElseUpdate(length, mutable.Set[String]())
+          setToAddTo += trimmedLine
       }
     }
     stream.close()
-  }
 
+    accumulateSizeToWords.mapValues(_.toSet).toMap
+  }
 
   def findWord(wordToSearchFor : String) : Boolean = {
     val length = wordToSearchFor.length
-    val wordList = wordSizeToWords.getOrElse(length, ListBuffer[String]())
+    val wordSet = wordSizeToWords.getOrElse(length, Set[String]())
 
-    wordList.contains(wordToSearchFor)
+    wordSet.contains(wordToSearchFor)
   }
 
   def numberWordsOfSize(length : Int) : Int = {
-    val wordList = wordSizeToWords.getOrElse(length, ListBuffer[String]())
+    val wordList = wordSizeToWords.getOrElse(length, Set[String]())
     wordList.size
   }
 }
