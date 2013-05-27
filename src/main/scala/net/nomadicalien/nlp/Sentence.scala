@@ -36,14 +36,15 @@ class Sentence(stringToDecode : String) extends Logging {
 
   def findLeastLikelyWord() : Word = {
     val wordList: List[Word] = words.toList
-    wordList.sortWith {(lhs, rhs)=> lhs.probabilityCorrectByWord < rhs.probabilityCorrectByWord}.head
+    wordList.sortWith {(lhs, rhs)=> lhs.probabilityCorrectByLetters < rhs.probabilityCorrectByLetters}.head
   }
 
   override def toString() : String  = {
     stringToDecode
   }
   override def equals(obj : Any) : Boolean = {
-    stringToDecode == obj.toString
+    if(obj != null) { stringToDecode == obj.toString }
+    else {false}
   }
 
   override def hashCode() : Int = {
@@ -61,7 +62,7 @@ class Sentence(stringToDecode : String) extends Logging {
 
   private def determineProbabilityCorrect(): Prob = {
     val probability: Double =
-      words.map(_.probabilityCorrectByWord.prob).product
+      words.map(_.probabilityCorrectByLetters.prob).product
 
     new Prob(probability)
   }
