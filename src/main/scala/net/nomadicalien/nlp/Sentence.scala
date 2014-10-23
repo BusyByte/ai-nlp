@@ -8,56 +8,70 @@ object Sentence {
 
 }
 
+object SentenceOrdering extends Ordering[Sentence]  {
+    def compare(lhs: Sentence, rhs: Sentence): Int = {
+      val lhsPriority = lhs.probabilityCorrect
+      val rhsPriority = rhs.probabilityCorrect
+
+      if (lhsPriority < rhsPriority) {
+        -1
+      }
+      else if (lhsPriority > rhsPriority) {
+        1
+      }
+      else {
+        0
+      }
+    }
+}
+
 /**
  * User: Shawn Garner
  * Created: 4/11/13 10:49 PM
  */
 class Sentence(stringToDecode : String) extends Logging {
-  val theHashCode = stringToDecode.hashCode()
+  val encodedString = stringToDecode.toLowerCase.replaceAll("\\p{Punct}", "")
 
-  val words : Set[Word] = stringToDecode.toLowerCase.split(Sentence.NON_ALPHA_PATTERN).map(new Word(_)).toSet
+  val words : List[Word] = encodedString.split(Sentence.NON_ALPHA_PATTERN).map(new Word(_)).toList
 
   val probabilityCorrect : Prob = determineProbabilityCorrect()
 
+  val distinctLetters = encodedString.foldLeft(List[Char]()) (
+    (theList: List[Char], theChar: Char) => theList.contains(theChar) match {
+      case true => theList
+      case _ => theList :+ theChar
+    }
+  ) map (LowerCaseLetter(_))
+
   /**
-   * Will swap letters without regard to case. <br>
-   * Will maintain the case of the letter positions of the original sentence.
+   * Will swap letters without regard to case.
    */
-  def swap(losingLetter : Char, candidateLetter : Char) : Sentence = {
-    logger.debug(s"replacing ${losingLetter} with ${candidateLetter}")
+  def swap(losingLetter: LowerCaseLetter, candidateLetter: LowerCaseLetter) : Sentence = {
+    logger.debug(s"replacing $losingLetter with $candidateLetter")
 
-    val upperCaseCharIndexes : Set[Int] = stringToDecode.zipWithIndex.filter(_._1.isUpper).map(_._2).toSet
-
-    val newSentenceLowerCase = stringToDecode.toLowerCase.replace(candidateLetter.toLower, Sentence.substituteChar).replace(losingLetter.toLower, candidateLetter.toLower).replace(Sentence.substituteChar, losingLetter.toLower)
-    val newSentence = newSentenceLowerCase.zipWithIndex.map { it => if(upperCaseCharIndexes.contains(it._2)) {it._1.toUpper} else {it._1} }.mkString
+    val newSentence = encodedString.replace(candidateLetter.toChar, Sentence.substituteChar).replace(losingLetter.toChar, candidateLetter.toChar).replace(Sentence.substituteChar, losingLetter.toChar)
 
     new Sentence(newSentence)
   }
 
   def findLeastLikelyWord() : Word = {
-    val wordList: List[Word] = words.toList
-    wordList.sortWith {(lhs, rhs)=> lhs.probabilityCorrectByLetters < rhs.probabilityCorrectByLetters}.head
+    words.sortWith {(lhs, rhs)=> lhs.probabilityCorrectByLetters < rhs.probabilityCorrectByLetters}.head
   }
 
-  override def toString() : String  = {
-    stringToDecode
-  }
+  override def toString: String  = encodedString
+
   override def equals(obj : Any) : Boolean = {
-    if(obj != null) { stringToDecode == obj.toString }
-    else {false}
-  }
-
-  override def hashCode() : Int = {
-    theHashCode
-  }
-
-  def printWordProbabilities() {
-    val sb = new StringBuilder()
-    this.words.foreach {
-      word => sb.append(word.format())
+    Option(obj) match {
+      case Some(rhs) => encodedString == obj.toString
+      case _ => false
     }
+  }
 
-    logger.debug(sb.toString())
+  override def hashCode() : Int = encodedString.hashCode
+
+
+  def printWordProbabilities() = {
+    this.words.map(_.format()).mkString
   }
 
   private def determineProbabilityCorrect(): Prob = {

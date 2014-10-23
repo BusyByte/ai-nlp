@@ -1,7 +1,6 @@
 package net.nomadicalien.nlp
 
 import org.apache.commons.lang3.time.StopWatch
-import org.apache.log4j.Logger
 
 /**
  * @author Shawn Garner
