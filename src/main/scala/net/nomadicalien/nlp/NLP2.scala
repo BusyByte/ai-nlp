@@ -10,34 +10,37 @@ class NLP2(stringToDecode: String, solution: String) extends Logging {
   val solutionSentence = new Sentence(solution)
 
   def process() = {
-
-
-//      logTranslation(lastSentence, currentSentence)
-//      val sentenceProb: Prob = currentSentence.probabilityCorrect
-//      logger.info("sentence prob correct = " + sentenceProb.prob)
-
-  //    currentSentence.printWordProbabilities()
-
-//      val leastLikelyWord = currentSentence.findLeastLikelyWord.toString()
-  //    logger.debug(s"least likely word [$leastLikelyWord]")
-      val allCandidateReplacements = ('a' to 'z').toList.map(LowerCaseLetter(_))
-      replaceLetter(encryptedSentence, allCandidateReplacements, 0, List())
-  }
-
-  def replaceLetter(sentence : Sentence, candidatesChars: List[LowerCaseLetter], index: Int, accumulatedSentences: List[Sentence]) : List[Sentence] = {
-    val distinctLetters = encryptedSentence.distinctLetters
-    index >= distinctLetters.size match {
-      case true => accumulatedSentences
-      _ =>  ???
-    }
-
-  }
-
-
-  def logTranslation(lastSentence: Sentence, currentSentence: Sentence) = {
     logger.info(s"ENCRYPTED     [$encryptedSentence]")
-    logger.info(s"LAST DECODED  [$lastSentence]")
-    logger.info(s"DECODED       [$currentSentence]")
     logger.info(s"SOLUTION      [$solutionSentence]")
+    val allCandidateReplacements = ('a' to 'z').toList.map(LowerCaseLetter)
+    logCurrent(encryptedSentence)
+    replaceLetter(encryptedSentence, allCandidateReplacements, 0, encryptedSentence)
+  }
+
+
+   def replaceLetter(sentence: Sentence, candidatesChars: List[LowerCaseLetter], distinctLettersIndex: Int, maxSentence: Sentence): Sentence = {
+     val distinctLetters = sentence.distinctLetters
+     if(distinctLettersIndex >= distinctLetters.size) {
+       if (sentence == solutionSentence) {
+         logger.info("!!!---Found it---!!!")
+         throw new RuntimeException("!!!---Found it---!!!")
+       }
+       if (sentence.probabilityCorrect > maxSentence.probabilityCorrect) {
+         logCurrent(sentence)
+         sentence
+       } else {
+         maxSentence
+       }
+     } else {
+        val letterToReplace = distinctLetters(distinctLettersIndex)
+        candidatesChars.foldLeft(maxSentence)(
+          (currMaxSentence, replacementLetter) => replaceLetter(sentence.swap(letterToReplace, replacementLetter), candidatesChars.filter(_ != replacementLetter), distinctLettersIndex + 1, currMaxSentence)
+        )
+    }
+  }
+
+
+  def logCurrent(currentSentence: Sentence) = {
+    logger.info(s"DECODED       [$currentSentence][${currentSentence.probabilityCorrect.format()}]")
   }
 }

@@ -14,41 +14,41 @@ object Word {
  * User: Shawn Garner
  * Created: 5/8/13 8:26 PM
  */
-class Word(val letters : String) {
-  val theHashCode = letters.hashCode
-  val hasVowel  = Word.vowelPattern.matcher(letters).matches()
+case class Word(letters: String) {
+  //def hasVowel  = Word.vowelPattern.matcher(letters).matches()
+  //def hasAllVowels =  Word.onlyVowelPattern.matcher(letters).matches()
+  val probabilityCorrectByLetters = determineProbCorrect(determineCharProbs())
 
-  val hasAllVowels =  Word.onlyVowelPattern.matcher(letters).matches()
-  val charProbs = determineCharProbs()
-  val probabilityCorrectByLetters = determineProbCorrect()
-
-  val probabilityCorrectByWord = determineProbabilityWordIsCorrect()
+  //val probabilityCorrectByWord = determineProbabilityWordIsCorrect()
 
   private def determineCharProbs() : List[CharProb] = {
-    val charProbStack = new mutable.ListBuffer[CharProb]()
-    var priorLetter : Char = '0'
-    letters.zipWithIndex.foreach {
-      case (currentLetter, index) =>
-        val prob : Double = {
-          if(index == 0) {
+    val (_,reverseCharProbList) = letters.zipWithIndex.foldLeft(('0', List[CharProb]())) (
+      (accumulator, currentElement) => {
+        val currentLetter = currentElement._1
+        val index = currentElement._2
+        val priorLetter = accumulator._1
+        val currentList = accumulator._2
+        val prob: Double = {
+          if (index == 0) {
             LetterFrequency.firstLetterProbabilityOf(currentLetter).getOrElse(0.0d)
           } else if (currentLetter == priorLetter) {
             LetterFrequency.doubleLetterProbabilityOf(currentLetter).getOrElse(0.0d)
-          }  else {
-            BiGram.probOfAGivenB(currentLetter, priorLetter)
+          } else {
+            BiGram.biGramLookup(s"$currentLetter|$priorLetter")
           }
         }
-      charProbStack += new CharProb(currentLetter, prob)
-      priorLetter = currentLetter
-    }
 
-     charProbStack.toList
+        (currentLetter, CharProb(currentLetter, prob) :: currentList)
+      }
+    )
+
+    reverseCharProbList.reverse
   }
 
-  private def determineProbCorrect() = new Prob(charProbs.map(_.probability).product)
+  private def determineProbCorrect(charProbs: List[CharProb]) = new Prob(charProbs.map(_.probability).product)
 
 
-  private def determineProbabilityWordIsCorrect(): Prob = {
+ /* private def determineProbabilityWordIsCorrect(): Prob = {
 
     val wordSize = letters.length
 
@@ -68,15 +68,15 @@ class Word(val letters : String) {
       } else {
         val foundWord = KnownWords.findWord(letters)
         if (foundWord) {
-          (1.0d / KnownWords.numberWordsOfSize(wordSize))
+          1.0d / KnownWords.numberWordsOfSize(wordSize)
         } else {
-          Math.max(probabilityCorrectByLetters.prob, (1.0d / WordFrequency.ESTIMATE_NUMBER_WORDS_IN_ENGLISH))
+          Math.max(probabilityCorrectByLetters.prob, 1.0d / WordFrequency.ESTIMATE_NUMBER_WORDS_IN_ENGLISH)
         }
       }
     }
 
     new Prob(probabilityCorrect)
-  }
+  }*/
 
 
   def format() : String = {
@@ -87,10 +87,11 @@ class Word(val letters : String) {
     sb.append("letter prob")
     sb.append("=")
     sb.append(probabilityCorrectByLetters.format())
-    sb.append(",")
+   /* sb.append(",")
     sb.append("word prob")
     sb.append("=")
-    sb.append(probabilityCorrectByWord.format())
+    sb.append(probabilityCorrectByWord.format())*/
+/*
     sb.append("\n")
     this.charProbs.foreach {
       charProb: CharProb =>
@@ -100,21 +101,12 @@ class Word(val letters : String) {
         sb.append(ProbFormatter.format(charProb.probability))
         sb.append("]")
     }
+*/
     sb.append("\n\n")
 
     sb.toString()
   }
 
-  override def toString() : String  = {
-    letters
-  }
-
-  override def equals(obj : Any) : Boolean = {
-    letters == obj.toString
-  }
-
-  override def hashCode() : Int = {
-    theHashCode
-  }
+  override def toString: String  =  letters
 
 }

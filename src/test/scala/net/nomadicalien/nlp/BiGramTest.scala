@@ -14,8 +14,18 @@ class BiGramTest extends JUnitSuite {
     assertEquals(0.3447d, probOfHGivenT, 0.0001d)
   }
 
+  @Test def verifyProbOfCurrentGivenPriorTHViaLookup() {
+    val probOfHGivenT = BiGram.biGramLookup("h|t")
+    assertEquals(0.3447d, probOfHGivenT, 0.0001d)
+  }
+
   @Test def verifyProbOfCurrentGivenPriorHT() {
     val probOfTGivenH = BiGram.probOfAGivenB('t', 'h')
+    assertEquals(0.0341d, probOfTGivenH, 0.0001d)
+  }
+
+  @Test def verifyProbOfCurrentGivenPriorHTViaLookup() {
+    val probOfTGivenH = BiGram.biGramLookup("t|h")
     assertEquals(0.0341d, probOfTGivenH, 0.0001d)
   }
 }

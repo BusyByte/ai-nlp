@@ -15,7 +15,7 @@ object App extends Logging {
 
 
     val nlp1 = new NLP2(stringToDecode, solution)
-    nlp1.process
+    nlp1.process()
     stopwatch.stop()
     logger.info("took ${(stopwatch.getTime() / 1000)} seconds")
   }
