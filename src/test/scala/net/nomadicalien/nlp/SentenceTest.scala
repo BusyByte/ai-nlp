@@ -13,7 +13,7 @@ class SentenceTest extends JUnitSuite {
   val sentence = new Sentence("The pretty red ball bounced along.")
 
   @Test def verifySwap() {
-    val swappedSentence = sentence.swap(LowerCaseLetter('t'), LowerCaseLetter('l'))
+    val swappedSentence = sentence.swap(new LowerCaseLetter('t'), new LowerCaseLetter('l'))
     assertEquals("lhe prelly red batt bounced atong", swappedSentence.toString())
   }
 

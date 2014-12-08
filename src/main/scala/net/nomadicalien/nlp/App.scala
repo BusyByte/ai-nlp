@@ -12,10 +12,9 @@ object App extends Logging {
     stopwatch.start()
     val stringToDecode = "Esp qtcde nzyqpcpynp zy esp ezatn zq Lcetqtntlw Tyepwwtrpynp hld spwo le Olcexzfes Nzwwprp ty estd jplc."
     val solution = "The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year."
-
-
     val nlp1 = new NLP2(stringToDecode, solution)
-    nlp1.process()
+    val maxProbSentence = nlp1.process()
+    println(s"Result is: $maxProbSentence")
     stopwatch.stop()
     logger.info("took ${(stopwatch.getTime() / 1000)} seconds")
   }

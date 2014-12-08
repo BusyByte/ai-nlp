@@ -1,6 +1,9 @@
 package net.nomadicalien.nlp
 
 
+import scala.annotation.tailrec
+
+
 /**
  * User: Shawn Garner
  * Created: 4/16/13 10:22 PM
@@ -12,35 +15,63 @@ class NLP2(stringToDecode: String, solution: String) extends Logging {
   def process() = {
     logger.info(s"ENCRYPTED     [$encryptedSentence]")
     logger.info(s"SOLUTION      [$solutionSentence]")
-    val allCandidateReplacements = ('a' to 'z').toList.map(LowerCaseLetter)
-    logCurrent(encryptedSentence)
-    replaceLetter(encryptedSentence, allCandidateReplacements, 0, encryptedSentence)
+    val perms = ('a' to 'z').toList.permutations
+    logSentence("INITIAL SENTENCE", encryptedSentence)
+    replaceLetter(encryptedSentence, perms, encryptedSentence, 0)
   }
 
 
-   def replaceLetter(sentence: Sentence, candidatesChars: List[LowerCaseLetter], distinctLettersIndex: Int, maxSentence: Sentence): Sentence = {
-     val distinctLetters = sentence.distinctLetters
-     if(distinctLettersIndex >= distinctLetters.size) {
-       if (sentence == solutionSentence) {
-         logger.info("!!!---Found it---!!!")
-         throw new RuntimeException("!!!---Found it---!!!")
-       }
-       if (sentence.probabilityCorrect > maxSentence.probabilityCorrect) {
-         logCurrent(sentence)
-         sentence
-       } else {
-         maxSentence
-       }
-     } else {
-        val letterToReplace = distinctLetters(distinctLettersIndex)
-        candidatesChars.foldLeft(maxSentence)(
-          (currMaxSentence, replacementLetter) => replaceLetter(sentence.swap(letterToReplace, replacementLetter), candidatesChars.filter(_ != replacementLetter), distinctLettersIndex + 1, currMaxSentence)
-        )
+  @tailrec
+  private def replaceLetter(sentence: Sentence, perms: Iterator[List[Char]], maxSentence: Sentence, stepCount: Long): Sentence = {
+    val sentenceLetters = sentence.distinctLetters
+
+    if (perms.isEmpty) {
+      maxSentence
+    } else {
+      val currentPerm = perms.next().map(new LowerCaseLetter(_))
+      val zippedReplacements = sentenceLetters zip currentPerm
+      val newSentence = sentence.swapMultiple(zippedReplacements)
+
+      if(stepCount % 100000 == 0) {
+        logger.info(s"Current Perm [${currentPerm.mkString}]")
+        logSentence("SANITY CHECK", newSentence)
+      }
+
+      if (newSentence == solutionSentence) {
+        logger.info("!!!---Found it---!!!")
+      }
+
+      if (newSentence.probabilityCorrect > maxSentence.probabilityCorrect) {
+        logSentence("NEW MAX", newSentence)
+        replaceLetter(sentence, perms, newSentence, stepCount + 1)
+      } else {
+        replaceLetter(sentence, perms, maxSentence, stepCount + 1)
+      }
+
     }
+
+
+    /*if(distinctLettersIndex >= sentenceLetters.size) {
+      if (sentence == solutionSentence) {
+        logger.info("!!!---Found it---!!!")
+        throw new RuntimeException("!!!---Found it---!!!")
+      }
+      if (sentence.probabilityCorrect > maxSentence.probabilityCorrect) {
+        logCurrent(sentence)
+        sentence
+      } else {
+        maxSentence
+      }
+    } else {
+       val letterToReplace = sentenceLetters(distinctLettersIndex)
+       perms.foldLeft(maxSentence)(
+         (currMaxSentence, replacementLetter) => replaceLetter(sentence.swap(letterToReplace, replacementLetter), perms.filter(_ != replacementLetter), distinctLettersIndex + 1, currMaxSentence)
+       )
+   }*/
   }
 
 
-  def logCurrent(currentSentence: Sentence) = {
-    logger.info(s"DECODED       [$currentSentence][${currentSentence.probabilityCorrect.format()}]")
+  def logSentence(label: String, currentSentence: Sentence) = {
+    logger.info(s"DECODED       [$currentSentence][${currentSentence.probabilityCorrect.format()}][$label]")
   }
 }

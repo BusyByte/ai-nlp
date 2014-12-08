@@ -3,9 +3,9 @@ package net.nomadicalien.nlp
 /**
  * Created by Shawn on 10/23/2014.
  */
-case class LowerCaseLetter(theChar: Char) {
-  def toChar = theChar.toLower
+class LowerCaseLetter(theChar: Char) {
+  val lowerCaseChar = theChar.toLower
 
-  override def toString: String = toChar.toString
+  override def toString: String = lowerCaseChar.toString
 }
 

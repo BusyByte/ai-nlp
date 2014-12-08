@@ -42,17 +42,32 @@ case class Sentence(stringToDecode : String) extends Logging {
       case true => theList
       case _ => theChar :: theList
     }
-  ) map LowerCaseLetter
+  ) map(new LowerCaseLetter(_))
 
   /**
    * Will swap letters without regard to case.
    */
-  def swap(losingLetter: LowerCaseLetter, candidateLetter: LowerCaseLetter) : Sentence = {
-    //logger.debug(s"replacing $losingLetter with $candidateLetter")
+  def swap(losingLetter: LowerCaseLetter, candidateLetter: LowerCaseLetter): Sentence = Sentence(swapString(encodedString, losingLetter, candidateLetter))
 
-    val newSentence = encodedString.replace(candidateLetter.toChar, Sentence.substituteChar).replace(losingLetter.toChar, candidateLetter.toChar).replace(Sentence.substituteChar, losingLetter.toChar)
+  def swapMultiple(swaps: List[(LowerCaseLetter, LowerCaseLetter)]): Sentence = {
+    Sentence(
+      swaps.foldLeft(encodedString) {
+      (acc, swapLetter) =>
+        val losingLetter = swapLetter._1
+        val candidateLetter = swapLetter._2
+        swapString(acc, losingLetter, candidateLetter)
+      }
+    )
+  }
 
-    new Sentence(newSentence)
+  //TODO: could return input if loosingLetter and candidate letter match
+  private def swapString(input: String, losingLetter: LowerCaseLetter, candidateLetter: LowerCaseLetter): String = {
+    val loosingChar: Char = losingLetter.lowerCaseChar
+    val candidateChar: Char = candidateLetter.lowerCaseChar
+    if(loosingChar == candidateChar)
+      input
+    else
+      input.replace(candidateChar, Sentence.substituteChar).replace(loosingChar, candidateChar).replace(Sentence.substituteChar, loosingChar)
   }
 
   def findLeastLikelyWord() : Word = {
