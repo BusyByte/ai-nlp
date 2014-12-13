@@ -14,7 +14,7 @@ object App extends Logging {
     val solution = "The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year."
     val nlp1 = new NLP2(stringToDecode, solution)
     val maxProbSentence = nlp1.process()
-    println(s"Result is: $maxProbSentence")
+    logger.info(s"Result is: $maxProbSentence")
     stopwatch.stop()
     logger.info("took ${(stopwatch.getTime() / 1000)} seconds")
   }

@@ -48,25 +48,6 @@ class NLP2(stringToDecode: String, solution: String) extends Logging {
       }
 
     }
-
-
-    /*if(distinctLettersIndex >= sentenceLetters.size) {
-      if (sentence == solutionSentence) {
-        logger.info("!!!---Found it---!!!")
-        throw new RuntimeException("!!!---Found it---!!!")
-      }
-      if (sentence.probabilityCorrect > maxSentence.probabilityCorrect) {
-        logCurrent(sentence)
-        sentence
-      } else {
-        maxSentence
-      }
-    } else {
-       val letterToReplace = sentenceLetters(distinctLettersIndex)
-       perms.foldLeft(maxSentence)(
-         (currMaxSentence, replacementLetter) => replaceLetter(sentence.swap(letterToReplace, replacementLetter), perms.filter(_ != replacementLetter), distinctLettersIndex + 1, currMaxSentence)
-       )
-   }*/
   }
 
 

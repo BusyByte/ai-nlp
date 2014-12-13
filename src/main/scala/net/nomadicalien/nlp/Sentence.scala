@@ -7,8 +7,6 @@ object Sentence {
   val substituteChar : Char = 26.toChar
   val NON_ALPHA_PATTERN : String = "[^\\p{Alpha}]+"
   val ALPHA_PATTERN : String = "[\\p{Alpha}]+"
-  val PUNCTUATION: String = "\\p{Punct}"
-
 }
 
 object SentenceOrdering extends Ordering[Sentence]  {
@@ -33,13 +31,17 @@ object SentenceOrdering extends Ordering[Sentence]  {
  * Created: 4/11/13 10:49 PM
  */
 case class Sentence(stringToDecode : String) extends Logging {
-  val encodedString = stringToDecode.toLowerCase.replaceAll(Sentence.PUNCTUATION, "")
+  val encodedString: String = stringToDecode.collect {
+    case c: Char if c.isLetter || c.isWhitespace => c.toLower
+  }
 
-  val words: List[Word] = encodedString.split(Sentence.NON_ALPHA_PATTERN).map(new Word(_)).toList
+  val words: List[Word] = encodedString.split(Sentence.NON_ALPHA_PATTERN).distinct.map(new Word(_)).toList
 
   val probabilityCorrect: Prob = determineProbabilityCorrect()
 
-  lazy val distinctLetters: List[LowerCaseLetter] = (SortedSet.empty[Char] ++ encodedString.replaceAll(Sentence.NON_ALPHA_PATTERN, "") map(new LowerCaseLetter(_))).toList
+  lazy val distinctLetters: List[LowerCaseLetter] = encodedString.distinct.toList.collect {
+    case c: Char if c.isLetter => new LowerCaseLetter(c)
+  }
 
   /**
    * Will swap letters without regard to case.
@@ -49,6 +51,7 @@ case class Sentence(stringToDecode : String) extends Logging {
   def swapMultiple(swaps: List[(LowerCaseLetter, LowerCaseLetter)]): Sentence = {
     val losers = swaps.map {it => (it._1.lowerCaseChar, it._2.lowerCaseChar)}.toMap
     val candidates = swaps.map {it => (it._2.lowerCaseChar, it._1.lowerCaseChar)}.toMap
+
     Sentence(
       encodedString.map {
         theChar: Char =>
