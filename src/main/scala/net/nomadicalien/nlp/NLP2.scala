@@ -23,8 +23,7 @@ class NLP2(stringToDecode: String, solution: String) extends Logging {
 
   @tailrec
   private def replaceLetter(sentence: Sentence, perms: Iterator[List[Char]], maxSentence: Sentence, stepCount: Long): Sentence = {
-    val sentenceLetters = sentence.distinctLetters
-
+    val sentenceLetters: List[LowerCaseLetter] = sentence.distinctLetters
     if (perms.isEmpty) {
       maxSentence
     } else {
@@ -32,7 +31,7 @@ class NLP2(stringToDecode: String, solution: String) extends Logging {
       val zippedReplacements = sentenceLetters zip currentPerm
       val newSentence = sentence.swapMultiple(zippedReplacements)
 
-      if(stepCount % 100000 == 0) {
+      if(stepCount % 1000000 == 0) {
         logger.info(s"Current Perm [${currentPerm.mkString}]")
         logSentence("SANITY CHECK", newSentence)
       }

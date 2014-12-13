@@ -17,7 +17,7 @@ object Word {
 case class Word(letters: String) {
   //def hasVowel  = Word.vowelPattern.matcher(letters).matches()
   //def hasAllVowels =  Word.onlyVowelPattern.matcher(letters).matches()
-  val probabilityCorrectByLetters = determineProbCorrect(determineCharProbs())
+  lazy val probabilityCorrectByLetters = determineProbCorrect(determineCharProbs())
 
   //val probabilityCorrectByWord = determineProbabilityWordIsCorrect()
 

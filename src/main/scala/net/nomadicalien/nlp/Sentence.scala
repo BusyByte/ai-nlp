@@ -1,5 +1,7 @@
 package net.nomadicalien.nlp
 
+import scala.collection.immutable.SortedSet
+
 
 object Sentence {
   val substituteChar : Char = 26.toChar
@@ -33,16 +35,11 @@ object SentenceOrdering extends Ordering[Sentence]  {
 case class Sentence(stringToDecode : String) extends Logging {
   val encodedString = stringToDecode.toLowerCase.replaceAll(Sentence.PUNCTUATION, "")
 
-  val words : List[Word] = encodedString.split(Sentence.NON_ALPHA_PATTERN).map(new Word(_)).toList
+  val words: List[Word] = encodedString.split(Sentence.NON_ALPHA_PATTERN).map(new Word(_)).toList
 
-  val probabilityCorrect : Prob = determineProbabilityCorrect()
+  val probabilityCorrect: Prob = determineProbabilityCorrect()
 
-  val distinctLetters = encodedString.replaceAll(Sentence.NON_ALPHA_PATTERN, "").foldRight(List[Char]()) (
-    (theChar: Char, theList: List[Char]) => theList.contains(theChar) match {
-      case true => theList
-      case _ => theChar :: theList
-    }
-  ) map(new LowerCaseLetter(_))
+  lazy val distinctLetters: List[LowerCaseLetter] = (SortedSet.empty[Char] ++ encodedString.replaceAll(Sentence.NON_ALPHA_PATTERN, "") map(new LowerCaseLetter(_))).toList
 
   /**
    * Will swap letters without regard to case.
@@ -50,17 +47,16 @@ case class Sentence(stringToDecode : String) extends Logging {
   def swap(losingLetter: LowerCaseLetter, candidateLetter: LowerCaseLetter): Sentence = Sentence(swapString(encodedString, losingLetter, candidateLetter))
 
   def swapMultiple(swaps: List[(LowerCaseLetter, LowerCaseLetter)]): Sentence = {
+    val losers = swaps.map {it => (it._1.lowerCaseChar, it._2.lowerCaseChar)}.toMap
+    val candidates = swaps.map {it => (it._2.lowerCaseChar, it._1.lowerCaseChar)}.toMap
     Sentence(
-      swaps.foldLeft(encodedString) {
-      (acc, swapLetter) =>
-        val losingLetter = swapLetter._1
-        val candidateLetter = swapLetter._2
-        swapString(acc, losingLetter, candidateLetter)
+      encodedString.map {
+        theChar: Char =>
+          losers.getOrElse(theChar, candidates.getOrElse(theChar, theChar))
       }
     )
   }
 
-  //TODO: could return input if loosingLetter and candidate letter match
   private def swapString(input: String, losingLetter: LowerCaseLetter, candidateLetter: LowerCaseLetter): String = {
     val loosingChar: Char = losingLetter.lowerCaseChar
     val candidateChar: Char = candidateLetter.lowerCaseChar
