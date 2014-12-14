@@ -77,6 +77,15 @@ case class Sentence(stringToDecode : String) extends Logging {
 
   override def toString: String  = encodedString
 
+
+
+  override def equals(obj: scala.Any): Boolean = obj match {
+    case s: Sentence => encodedString.equals(s.encodedString)
+    case _ => false
+  }
+
+  override def hashCode(): Int = encodedString.hashCode
+
   def printWordProbabilities() = {
     this.words.map(_.format()).mkString
   }

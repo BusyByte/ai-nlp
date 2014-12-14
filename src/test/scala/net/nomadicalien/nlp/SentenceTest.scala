@@ -44,6 +44,18 @@ class SentenceTest extends JUnitSuite {
     assert(solutionSentence === solutionSentence2)
   }
 
+  @Test def verifyEqualsCase() {
+    val solutionSentence = new Sentence("The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year.")
+    val solutionSentence2 = new Sentence("the first conference on the topic of artificial intelligence was held at dartmouth college in this year.")
+    assert(solutionSentence === solutionSentence2)
+  }
+
+  @Test def verifyHashesMatchCase() {
+    val solutionSentence = new Sentence("The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year.")
+    val solutionSentence2 = new Sentence("the first conference on the topic of artificial intelligence was held at dartmouth college in this year.")
+    assert(solutionSentence.hashCode() === solutionSentence2.hashCode())
+  }
+
   @Test def verifyHashCode() {
     val solutionSentence = new Sentence("The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year.")
     val solutionSentence2 = new Sentence("The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year.")
