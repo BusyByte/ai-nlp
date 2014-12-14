@@ -4,16 +4,16 @@ package net.nomadicalien.nlp
  * @author Shawn Garner
  * Created: 3/30/13 7:16 AM
  */
-case class CharProb(letter : Char, probability : Double = 0.0d)
+case class LetterProb(letter: Letter, probability: Probability = 0.0d)
 
-object CharProb {
+object LetterProb {
   /** highest probability should be first **/
-  def sortByProbability(listToSort : List[CharProb]) : List[CharProb] = {
+  def sortByProbability(listToSort : List[LetterProb]) : List[LetterProb] = {
       listToSort.sortBy(1.0d - _.probability)
   }
 
   /** a should be first and z should be last **/
-  def sortByLetter(listToSort : List[CharProb]) : List[CharProb] = {
+  def sortByLetter(listToSort : List[LetterProb]) : List[LetterProb] = {
     listToSort.sortBy(_.letter)
   }
 

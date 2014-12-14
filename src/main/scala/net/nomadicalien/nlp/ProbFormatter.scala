@@ -15,5 +15,5 @@ object ProbFormatter {
    }
  }
 
-  def format(probability : Double) = formatHolder.get.format(probability)
+  def format(probability: Probability) = formatHolder.get.format(probability)
 }

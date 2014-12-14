@@ -37,20 +37,20 @@ case class Sentence(stringToDecode : String) extends Logging {
 
   val words: List[Word] = encodedString.split(Sentence.NON_ALPHA_PATTERN).distinct.map(new Word(_)).toList
 
-  val probabilityCorrect: Prob = determineProbabilityCorrect()
+  val probabilityCorrect: Probability = determineProbabilityCorrect(words)
 
-  lazy val distinctLetters: List[LowerCaseLetter] = encodedString.distinct.toList.collect {
-    case c: Char if c.isLetter => new LowerCaseLetter(c)
+  lazy val distinctLetters: List[Letter] = encodedString.distinct.toList.collect {
+    case c: Char if c.isLetter => c
   }
 
   /**
    * Will swap letters without regard to case.
    */
-  def swap(losingLetter: LowerCaseLetter, candidateLetter: LowerCaseLetter): Sentence = Sentence(swapString(encodedString, losingLetter, candidateLetter))
+  def swap(losingLetter: Letter, candidateLetter: Letter): Sentence = Sentence(swapString(encodedString, losingLetter, candidateLetter))
 
-  def swapMultiple(swaps: List[(LowerCaseLetter, LowerCaseLetter)]): Sentence = {
-    val losers = swaps.map {it => (it._1.lowerCaseChar, it._2.lowerCaseChar)}.toMap
-    val candidates = swaps.map {it => (it._2.lowerCaseChar, it._1.lowerCaseChar)}.toMap
+  def swapMultiple(swaps: List[(Letter, Letter)]): Sentence = {
+    val losers = swaps.map {it => (it._1, it._2)}.toMap
+    val candidates = swaps.map {it => (it._2, it._1)}.toMap
 
     Sentence(
       encodedString.map {
@@ -60,13 +60,15 @@ case class Sentence(stringToDecode : String) extends Logging {
     )
   }
 
-  private def swapString(input: String, losingLetter: LowerCaseLetter, candidateLetter: LowerCaseLetter): String = {
-    val loosingChar: Char = losingLetter.lowerCaseChar
-    val candidateChar: Char = candidateLetter.lowerCaseChar
-    if(loosingChar == candidateChar)
+  private def swapString(input: String, losingLetter: Letter, candidateLetter: Letter): String = {
+    if(losingLetter == candidateLetter)
       input
     else
-      input.replace(candidateChar, Sentence.substituteChar).replace(loosingChar, candidateChar).replace(Sentence.substituteChar, loosingChar)
+      input.map {
+        case c: Letter if c == losingLetter => candidateLetter
+        case c: Letter if c == candidateLetter => losingLetter
+        case c: Letter => c
+      }
   }
 
   def findLeastLikelyWord() : Word = {
@@ -79,11 +81,11 @@ case class Sentence(stringToDecode : String) extends Logging {
     this.words.map(_.format()).mkString
   }
 
-  private def determineProbabilityCorrect(): Prob = {
+  private def determineProbabilityCorrect(wordList: List[Word]): Probability = {
     val probability: Double =
-      words.map(_.probabilityCorrectByLetters.prob).sum / words.size
+      wordList.map(_.probabilityCorrectByLetters).sum / wordList.size
 
-    new Prob(probability)
+    probability
   }
 
 }

@@ -23,11 +23,11 @@ class NLP2(stringToDecode: String, solution: String) extends Logging {
 
   @tailrec
   private def replaceLetter(sentence: Sentence, perms: Iterator[List[Char]], maxSentence: Sentence, stepCount: Long): Sentence = {
-    val sentenceLetters: List[LowerCaseLetter] = sentence.distinctLetters
+    val sentenceLetters: List[Letter] = sentence.distinctLetters
     if (perms.isEmpty) {
       maxSentence
     } else {
-      val currentPerm = perms.next().map(new LowerCaseLetter(_))
+      val currentPerm: List[Letter] = perms.next()
       val zippedReplacements = sentenceLetters zip currentPerm
       val newSentence = sentence.swapMultiple(zippedReplacements)
 
@@ -52,6 +52,6 @@ class NLP2(stringToDecode: String, solution: String) extends Logging {
 
 
   def logSentence(label: String, currentSentence: Sentence) = {
-    logger.info(s"DECODED       [$currentSentence][${currentSentence.probabilityCorrect.format()}][$label]")
+    logger.info(s"DECODED       [$currentSentence][${ProbFormatter.format(currentSentence.probabilityCorrect)}][$label]")
   }
 }

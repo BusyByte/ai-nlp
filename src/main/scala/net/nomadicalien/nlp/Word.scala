@@ -1,7 +1,5 @@
 package net.nomadicalien.nlp
 
-import scala.collection.mutable
-import net.nomadicalien.nlp.WordFrequency.WordRanking
 import java.util.regex.Pattern
 
 object Word {
@@ -15,10 +13,10 @@ object Word {
  * Created: 5/8/13 8:26 PM
  */
 case class Word(letters: String) {
-  lazy val probabilityCorrectByLetters = determineProbCorrect(determineCharProbs())
+  lazy val probabilityCorrectByLetters: Probability = determineProbCorrect(determineCharProbs())
 
-  private def determineCharProbs(): List[CharProb] = {
-    val (_, reverseCharProbList) = letters.foldLeft((None: Option[Char], List[CharProb]()))(
+  private def determineCharProbs(): List[LetterProb] = {
+    val (_, reverseCharProbList) = letters.foldLeft((None: Option[Char], List[LetterProb]()))(
       (accumulator, currentLetter) => {
         val priorLetterMaybe: Option[Char] = accumulator._1
         val currentList = accumulator._2
@@ -35,14 +33,14 @@ case class Word(letters: String) {
           }
         }
 
-        (Some(currentLetter), CharProb(currentLetter, prob) :: currentList)
+        (Some(currentLetter), LetterProb(currentLetter, prob) :: currentList)
       }
     )
 
     reverseCharProbList // probabilities are reverse order but should not matter since we only multiply them
   }
 
-  private def determineProbCorrect(charProbs: List[CharProb]) = new Prob(charProbs.map(_.probability).product)
+  private def determineProbCorrect(charProbs: List[LetterProb]):Probability = charProbs.map(_.probability).product
 
 
   def format(): String = {
@@ -52,7 +50,7 @@ case class Word(letters: String) {
     sb.append("\n")
     sb.append("letter prob")
     sb.append("=")
-    sb.append(probabilityCorrectByLetters.format())
+    sb.append(ProbFormatter.format(probabilityCorrectByLetters))
     sb.append("\n\n")
 
     sb.toString()

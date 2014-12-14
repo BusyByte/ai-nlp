@@ -134,20 +134,20 @@ object LetterFrequency {
     englishDoubleLetterFrequencies.get(target)
   }
 
-  def getBestMatchByFirstLetterFrequency(experimentalFrequency : Double, exclusions : Set[Char]) : Option[CharProb] = {
+  def getBestMatchByFirstLetterFrequency(experimentalFrequency : Double, exclusions : Set[Char]) : Option[LetterProb] = {
     getBestMatchByFrequency(englishFirstLetterFrequencies, experimentalFrequency, exclusions)
   }
 
-  def getBestMatchByLetterFrequency(experimentalFrequency : Double, exclusions : Set[Char]) : Option[CharProb] =  {
+  def getBestMatchByLetterFrequency(experimentalFrequency : Double, exclusions : Set[Char]) : Option[LetterProb] =  {
     getBestMatchByFrequency(englishLetterFrequencies, experimentalFrequency, exclusions)
   }
 
-  def getBestMatchByDoubleLetterFrequency(experimentalFrequency : Double, exclusions : Set[Char]) : Option[CharProb]= {
+  def getBestMatchByDoubleLetterFrequency(experimentalFrequency : Double, exclusions : Set[Char]) : Option[LetterProb]= {
     getBestMatchByFrequency(englishDoubleLetterFrequencies, experimentalFrequency, exclusions)
   }
 
   private def getBestMatchByFrequency(mapToSearch : Map[Char, Double], experimentalFrequency : Double,
-  excludedLetters : Set[Char]) : Option[CharProb] = {
+  excludedLetters : Set[Char]) : Option[LetterProb] = {
 
     val lowestFound : Option[(Char, Double)] =  mapToSearch.filterKeys {key : Char => !excludedLetters.contains(key)}.mapValues { value: Double =>
       val theoreticalFrequency = value
@@ -163,7 +163,7 @@ object LetterFrequency {
      if(lowestFound.isEmpty) {
        None
      } else {
-       Option(CharProb(lowestFound.get._1, lowestFound.get._2))
+       Option(LetterProb(lowestFound.get._1, lowestFound.get._2))
      }
   }
 

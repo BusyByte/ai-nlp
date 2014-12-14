@@ -13,13 +13,13 @@ class SentenceTest extends JUnitSuite {
   val sentence = new Sentence("The pretty red ball bounced along.")
 
   @Test def verifySwapMultiple(): Unit = {
-    val swaps = List((new LowerCaseLetter('t'), new LowerCaseLetter('a')),(new LowerCaseLetter('l'), new LowerCaseLetter('p')))
+    val swaps = List(('t', 'a'),('l', 'p'))
     val swappedSentence = sentence.swapMultiple(swaps)
     assertEquals("ahe lreaay red btpp bounced tpong", swappedSentence.toString)
   }
 
   @Test def verifySwap() {
-    val swappedSentence = sentence.swap(new LowerCaseLetter('t'), new LowerCaseLetter('l'))
+    val swappedSentence = sentence.swap('t', 'l')
     assertEquals("lhe prelly red batt bounced atong", swappedSentence.toString())
   }
 
@@ -34,8 +34,8 @@ class SentenceTest extends JUnitSuite {
 
   @Test def verifyProbabilityCorrect() {
     val solutionSentence = new Sentence("The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year.")
-    val probability: Prob = solutionSentence.probabilityCorrect
-    assertEquals(0.00615, probability.prob, 0.0001d)
+    val probability: Probability = solutionSentence.probabilityCorrect
+    assertEquals(0.00487, probability, 0.0001d)
   }
 
   @Test def verifyEquals() {
