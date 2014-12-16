@@ -8,11 +8,11 @@ import scala.annotation.tailrec
  * User: Shawn Garner
  * Created: 4/16/13 10:22 PM
  */
-class NLP2(stringToDecode: String, solution: String) extends Logging {
+class BruteForceNLP(stringToDecode: String, solution: String) extends NaturalLanguageProcessor with Logging {
   val encryptedSentence = new Sentence(stringToDecode)
   val solutionSentence = new Sentence(solution)
 
-  def process() = {
+  def process(): Sentence = {
     logger.info(s"ENCRYPTED     [$encryptedSentence]")
     logger.info(s"SOLUTION      [$solutionSentence]")
     val perms = ('a' to 'z').toList.permutations
