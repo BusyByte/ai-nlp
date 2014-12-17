@@ -17,12 +17,14 @@ class ActorNLP(stringToDecode: String, solution: String) extends NaturalLanguage
   override def process(): Sentence = {
     logger.info(s"ENCRYPTED     [$encryptedSentence]")
     logger.info(s"SOLUTION      [$solutionSentence]")
-    val perms = ('a' to 'z').toList.permutations
     logSentence("INITIAL SENTENCE", encryptedSentence)
-
     val promise = Promise[Sentence]()
 
+    val perms = ('a' to 'z').toList.permutations
+
     val actorSystem = ActorSystem("NLP")
+    val watcher = actorSystem.actorOf(Props[BackPressureWatcher], "BackPressure")
+    actorSystem.eventStream.subscribe(watcher, classOf[DeadLetter])
     val sentComparator = actorSystem.actorOf(Props(classOf[SentenceComparator], promise, encryptedSentence, solutionSentence).withMailbox(mailbox), "SentenceComparator")
     val permGenerator = actorSystem.actorOf(Props(classOf[PermutationGenerator], encryptedSentence, sentComparator), "PermGen")
     permGenerator ! Start

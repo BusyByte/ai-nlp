@@ -8,7 +8,8 @@ import net.nomadicalien.nlp.{Logging, Sentence}
  * Created by Shawn on 12/16/2014.
  */
 class PermutationGenerator(encryptedSentence: Sentence, comparator: ActorRef) extends Actor with Logging {
-  import scala.concurrent.duration._
+
+  context.system.eventStream.subscribe(self, classOf[SlowDown])
 
   val sentenceGeneratorRouter: Router = {
     val routees = Vector.fill(numWorkers) {
@@ -19,17 +20,14 @@ class PermutationGenerator(encryptedSentence: Sentence, comparator: ActorRef) ex
     Router(SmallestMailboxRoutingLogic(), routees)
   }
 
-  context.system.eventStream.subscribe(self, classOf[DeadLetter])
   var numToGenerate = 15000
-  var isOpen = true
   val perms = ('a' to 'z').toList.permutations
   var terminatedCount = 0
   var scheduledTask: Option[Cancellable] = None
   override def receive: Receive = {
     case Start =>
-      scheduledTask = Some(context.system.scheduler.schedule(500 millis, 500 millis, self, GeneratePerms)(context.system.dispatcher))
+      scheduledTask = Some(context.system.scheduler.schedule(generationSchedule, generationSchedule, self, GeneratePerms)(context.system.dispatcher))
     case GeneratePerms =>
-      isOpen = true
       perms.take(numToGenerate).foreach { it =>
         sentenceGeneratorRouter.route(Permutation(it), self)
       }
@@ -37,14 +35,7 @@ class PermutationGenerator(encryptedSentence: Sentence, comparator: ActorRef) ex
         scheduledTask.get.cancel()
         sentenceGeneratorRouter.route(Broadcast(Kill), self)
       }
-    case d: DeadLetter =>
-      logger.info(s"Dead Letter $d")
-      if(isOpen) {
-        numToGenerate = scala.math.max(numToGenerate - 1, 1)
-        isOpen = false
-      }
-
-      d.recipient.!(d.message)(d.sender)
+    case SlowDown => numToGenerate = scala.math.max(numToGenerate - 1, 1)
     case Terminated =>
       terminatedCount = terminatedCount + 1
       if(terminatedCount == numWorkers) {
