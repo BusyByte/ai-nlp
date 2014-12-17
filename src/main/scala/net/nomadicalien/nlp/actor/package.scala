@@ -10,4 +10,6 @@ package object actor {
   case object CompleteResult
 
   val mailbox = "bounded-mailbox"
+
+  val numWorkers = 3
 }

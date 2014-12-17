@@ -11,7 +11,7 @@ class PermutationGenerator(encryptedSentence: Sentence, comparator: ActorRef) ex
   import scala.concurrent.duration._
 
   val sentenceGeneratorRouter: Router = {
-    val routees = Vector.fill(5) {
+    val routees = Vector.fill(numWorkers) {
       val r = context.actorOf(Props(classOf[SentenceGenerator], encryptedSentence, comparator).withMailbox(mailbox))
       context watch r
       ActorRefRoutee(r)
@@ -20,14 +20,14 @@ class PermutationGenerator(encryptedSentence: Sentence, comparator: ActorRef) ex
   }
 
   context.system.eventStream.subscribe(self, classOf[DeadLetter])
-  var numToGenerate = 5000
+  var numToGenerate = 15000
   var isOpen = true
   val perms = ('a' to 'z').toList.permutations
   var terminatedCount = 0
   var scheduledTask: Option[Cancellable] = None
   override def receive: Receive = {
     case Start =>
-      scheduledTask = Some(context.system.scheduler.schedule(10 millis, 10 millis, self, GeneratePerms)(context.system.dispatcher))
+      scheduledTask = Some(context.system.scheduler.schedule(500 millis, 500 millis, self, GeneratePerms)(context.system.dispatcher))
     case GeneratePerms =>
       isOpen = true
       perms.take(numToGenerate).foreach { it =>
@@ -35,10 +35,10 @@ class PermutationGenerator(encryptedSentence: Sentence, comparator: ActorRef) ex
       }
       if(perms.isEmpty) {
         scheduledTask.get.cancel()
-        terminatedCount = 0
         sentenceGeneratorRouter.route(Broadcast(Kill), self)
       }
     case d: DeadLetter =>
+      logger.info(s"Dead Letter $d")
       if(isOpen) {
         numToGenerate = scala.math.max(numToGenerate - 1, 1)
         isOpen = false
@@ -47,7 +47,7 @@ class PermutationGenerator(encryptedSentence: Sentence, comparator: ActorRef) ex
       d.recipient.!(d.message)(d.sender)
     case Terminated =>
       terminatedCount = terminatedCount + 1
-      if(terminatedCount == 5) {
+      if(terminatedCount == numWorkers) {
         comparator ! CompleteResult
         context.stop(self)
       }
