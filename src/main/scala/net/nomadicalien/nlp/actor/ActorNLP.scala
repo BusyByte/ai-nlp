@@ -1,12 +1,10 @@
 package net.nomadicalien.nlp.actor
 
 import akka.actor._
-import akka.routing._
 import net.nomadicalien.nlp.{Logging, NaturalLanguageProcessor, ProbFormatter, Sentence}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Promise}
-import scala.util.Success
 
 /**
  * Created by Shawn on 12/15/2014.
@@ -14,19 +12,18 @@ import scala.util.Success
 class ActorNLP(stringToDecode: String, solution: String) extends NaturalLanguageProcessor with Logging {
   val encryptedSentence = new Sentence(stringToDecode)
   val solutionSentence = new Sentence(solution)
+
   override def process(): Sentence = {
     logger.info(s"ENCRYPTED     [$encryptedSentence]")
     logger.info(s"SOLUTION      [$solutionSentence]")
     logSentence("INITIAL SENTENCE", encryptedSentence)
     val promise = Promise[Sentence]()
 
-    val perms = ('a' to 'z').toList.permutations
-
     val actorSystem = ActorSystem("NLP")
     val watcher = actorSystem.actorOf(Props[BackPressureWatcher], "BackPressure")
     actorSystem.eventStream.subscribe(watcher, classOf[DeadLetter])
     val sentComparator = actorSystem.actorOf(Props(classOf[SentenceComparator], promise, encryptedSentence, solutionSentence).withMailbox(mailbox), "SentenceComparator")
-    val permGenerator = actorSystem.actorOf(Props(classOf[PermutationGenerator], encryptedSentence, sentComparator), "PermGen")
+    val permGenerator = actorSystem.actorOf(Props(classOf[PermutationGenerator], encryptedSentence), "PermGen")
     permGenerator ! Start
 
     val f = promise.future

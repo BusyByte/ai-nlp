@@ -7,13 +7,14 @@ import net.nomadicalien.nlp.{Logging, Sentence}
 /**
  * Created by Shawn on 12/16/2014.
  */
-class PermutationGenerator(encryptedSentence: Sentence, comparator: ActorRef) extends Actor with Logging {
+class PermutationGenerator(encryptedSentence: Sentence) extends Actor with Logging {
+  val comparator = context.system.actorSelection("/user/SentenceComparator")
 
   context.system.eventStream.subscribe(self, classOf[SlowDown])
 
   val sentenceGeneratorRouter: Router = {
     val routees = Vector.fill(numWorkers) {
-      val r = context.actorOf(Props(classOf[SentenceGenerator], encryptedSentence, comparator).withMailbox(mailbox))
+      val r = context.actorOf(Props(classOf[SentenceGenerator], encryptedSentence).withMailbox(mailbox))
       context watch r
       ActorRefRoutee(r)
     }

@@ -7,8 +7,8 @@ import net.nomadicalien.nlp.{Logging, Sentence}
 /**
  * Created by Shawn on 12/16/2014.
  */
-class SentenceGenerator(encryptedSentence: Sentence, comparator: ActorRef) extends Actor with Logging with RequiresMessageQueue[BoundedMessageQueueSemantics] {
-
+class SentenceGenerator(encryptedSentence: Sentence) extends Actor with Logging with RequiresMessageQueue[BoundedMessageQueueSemantics] {
+  val comparator = context.system.actorSelection("/user/SentenceComparator")
   var stepCount:Long = 0
 
   override def receive: Actor.Receive = {
