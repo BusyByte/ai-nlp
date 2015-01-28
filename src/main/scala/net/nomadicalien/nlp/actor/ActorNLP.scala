@@ -20,10 +20,9 @@ class ActorNLP(stringToDecode: String, solution: String) extends NaturalLanguage
     val promise = Promise[Sentence]()
 
     val actorSystem = ActorSystem("NLP")
-    val watcher = actorSystem.actorOf(Props[BackPressureWatcher], "BackPressure")
-    actorSystem.eventStream.subscribe(watcher, classOf[DeadLetter])
-    val sentComparator = actorSystem.actorOf(Props(classOf[SentenceComparator], promise, encryptedSentence, solutionSentence).withMailbox(mailbox), "SentenceComparator")
-    val permGenerator = actorSystem.actorOf(Props(classOf[PermutationGenerator], encryptedSentence), "PermGen")
+    val reconciler = actorSystem.actorOf(Props(classOf[SentenceComparatorReconciler], promise, encryptedSentence, solutionSentence))
+    val permGenerator = actorSystem.actorOf(Props(classOf[PermutationGenerator], encryptedSentence), "PermutationGenerator")
+
     permGenerator ! Start
 
     val f = promise.future

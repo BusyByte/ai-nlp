@@ -1,47 +1,42 @@
 package net.nomadicalien.nlp.actor
 
 import akka.actor._
-import akka.routing.{Broadcast, SmallestMailboxRoutingLogic, ActorRefRoutee, Router}
+import akka.routing._
 import net.nomadicalien.nlp.{Logging, Sentence}
+import scala.collection.mutable
 
 /**
  * Created by Shawn on 12/16/2014.
  */
 class PermutationGenerator(encryptedSentence: Sentence) extends Actor with Logging {
-  val comparator = context.system.actorSelection("/user/SentenceComparator")
-
-  context.system.eventStream.subscribe(self, classOf[SlowDown])
-
-  val sentenceGeneratorRouter: Router = {
-    val routees = Vector.fill(numWorkers) {
-      val r = context.actorOf(Props(classOf[SentenceGenerator], encryptedSentence).withMailbox(mailbox))
-      context watch r
-      ActorRefRoutee(r)
-    }
-    Router(SmallestMailboxRoutingLogic(), routees)
-  }
-
-  var numToGenerate = 15000
+  val workerRegistry = mutable.Set[ActorRef]()
   val perms = ('a' to 'z').toList.permutations
-  var terminatedCount = 0
-  var scheduledTask: Option[Cancellable] = None
+
+  override def preStart() = (1 to numWorkers).foreach {number => context.actorOf(Props(classOf[SentenceGenerator], encryptedSentence),s"SentenceGenerator$number")}
   override def receive: Receive = {
     case Start =>
-      scheduledTask = Some(context.system.scheduler.schedule(generationSchedule, generationSchedule, self, GeneratePerms)(context.system.dispatcher))
-    case GeneratePerms =>
-      perms.take(numToGenerate).foreach { it =>
-        sentenceGeneratorRouter.route(Permutation(it), self)
+
+    case RegisterWorker =>
+      val theSender = sender()
+      if(!workerRegistry.contains(theSender)) {
+        context.watch(theSender)
       }
-      if(perms.isEmpty) {
-        scheduledTask.get.cancel()
-        sentenceGeneratorRouter.route(Broadcast(Kill), self)
-      }
-    case SlowDown => numToGenerate = scala.math.max(numToGenerate - 1, 1)
-    case Terminated =>
-      terminatedCount = terminatedCount + 1
-      if(terminatedCount == numWorkers) {
-        comparator ! CompleteResult
+      sendWork(theSender)
+    case SendMoreWork =>
+      sendWork(sender())
+    case Terminated(theActorRef) =>
+      workerRegistry.remove(theActorRef)
+      if(workerRegistry.isEmpty) {
+        context.system.eventStream.publish(CompleteResult())
         context.stop(self)
       }
+  }
+
+  private def sendWork(theActor: ActorRef): Unit = {
+    if(perms.hasNext) {
+      perms.take(batchSize).foreach(theActor ! Permutation(_))
+    } else {
+      workerRegistry.foreach(_ ! Kill)
+    }
   }
 }
