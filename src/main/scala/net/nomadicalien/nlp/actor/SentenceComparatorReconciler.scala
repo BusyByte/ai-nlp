@@ -20,7 +20,7 @@ class SentenceComparatorReconciler(p: Promise[Sentence], encryptedSentence: Sent
     case NewMax(s) =>
       stepCount = stepCount + 1
       if(stepCount % 1000000 == 0) {
-        logSentence("RECONILED SANITY CHECK", s)
+        logSentence("RECONCILED SANITY CHECK", s)
       }
 
       if(s.probabilityCorrect > currentMax.probabilityCorrect) {

@@ -1,19 +1,19 @@
 package net.nomadicalien.nlp
 
-import net.nomadicalien.nlp.actor.ActorNLP
+import net.nomadicalien.nlp.actor.{ActorStreamNLP, ActorNLP}
 
 /**
  * @author Shawn Garner
  */
 object App extends Logging {
-  val argsOptions = "Valid Options: Brute Force, Actor"
-
   val stringToDecode = "Esp qtcde nzyqpcpynp zy esp ezatn zq Lcetqtntlw Tyepwwtrpynp hld spwo le Olcexzfes Nzwwprp ty estd jplc."
   val solution = "The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year."
   val processors = Map(
   "Brute Force" -> new BruteForceNLP(stringToDecode, solution),
-  "Actor" -> new ActorNLP(stringToDecode, solution)
+  "Actor" -> new ActorNLP(stringToDecode, solution),
+  "StreamActor" -> new ActorStreamNLP(stringToDecode, solution)
   )
+  val argsOptions = "Valid Options: " + processors.keys.mkString(",")
 
   def main(args : Array[String]) {
     require(args.length == 1, argsOptions)
