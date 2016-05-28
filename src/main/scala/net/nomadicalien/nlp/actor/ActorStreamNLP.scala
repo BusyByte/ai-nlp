@@ -28,26 +28,6 @@ class ActorStreamNLP(stringToDecode: String, solution: String) extends NaturalLa
       encryptedSentence.swapMultiple(zipped)
     }
 
-  val sentenceFlow: Flow[List[Char], Sentence, NotUsed] =
-    Flow[List[Char]].map { perm =>
-      val zipped = encryptedSentence.distinctLetters zip perm.reverse
-      encryptedSentence.swapMultiple(zipped)
-    }
-
-  import GraphDSL.Implicits._
-  val sentenceGenerator: Flow[List[Char], Sentence, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit builder =>
-    val workerCount = 5
-    val balancer = builder.add(Balance[List[Char]](workerCount))
-    val merge = builder.add(Merge[Sentence](workerCount))
-
-    for (_ <- 1 to workerCount) {
-      balancer ~> sentenceFlow.async ~> merge
-    }
-
-    FlowShape(balancer.in, merge.out)
-  })
-
-  val runnable2: RunnableGraph[Future[Sentence]] = permSource.async.via(sentenceGenerator).toMat(Sink.fold(encryptedSentence)(sentenceMax))(Keep.right)
   val runnable: RunnableGraph[Future[Sentence]] = sentenceSource.async.toMat(Sink.fold(encryptedSentence)(sentenceMax))(Keep.right)
 
   override def process(): Sentence = {
@@ -55,7 +35,7 @@ class ActorStreamNLP(stringToDecode: String, solution: String) extends NaturalLa
     logger.info(s"SOLUTION      [$solutionSentence]")
     logSentence("INITIAL SENTENCE", encryptedSentence)
 
-    val sentenceF: Future[Sentence] = runnable2.run()
+    val sentenceF: Future[Sentence] = runnable.run()
     Await.result(sentenceF, Duration.Inf)
   }
 
@@ -78,28 +58,4 @@ class ActorStreamNLP(stringToDecode: String, solution: String) extends NaturalLa
   }
 }
 
-class StreamSentenceComparatorReconciler(encryptedSentence: Sentence, solutionSentence: Sentence) extends Actor with Logging {
-  var currentMax: Sentence = encryptedSentence
-  val random = new Random()
 
-  override def receive: Actor.Receive = {
-    case NewMax(s) =>
-      if(random.nextInt(10000000) == 0) {
-        logSentence("RECONCILED SANITY CHECK", s)
-      }
-
-      if(s.probabilityCorrect > currentMax.probabilityCorrect) {
-        logSentence("NEW RECONCILED MAX", s)
-        currentMax = s
-      }
-
-      if(solutionSentence == s) {
-        logger.info("!!!---Found it---!!!")
-      }
-  }
-
-  def logSentence(label: String, currentSentence: Sentence) = {
-    logger.info(s"DECODED       [$currentSentence][${ProbFormatter.format(currentSentence.probabilityCorrect)}][$label]")
-  }
-
-}
