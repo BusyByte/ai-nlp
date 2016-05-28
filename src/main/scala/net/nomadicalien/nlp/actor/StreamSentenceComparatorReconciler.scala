@@ -12,7 +12,7 @@ class StreamSentenceComparatorReconciler(encryptedSentence: Sentence, solutionSe
   var currentMax: Sentence = encryptedSentence
   val random = new Random()
 
-  override def receive: Actor.Receive = {
+  def receive: Actor.Receive = {
     case NewMax(s) =>
       if(random.nextInt(10000000) == 0) {
         logSentence("RECONCILED SANITY CHECK", s)

@@ -1,6 +1,6 @@
 package net.nomadicalien.nlp
 
-import net.nomadicalien.nlp.actor.{ActorStreamParrallelNLP, ActorStreamNLP, ActorNLP}
+import net.nomadicalien.nlp.actor._
 
 /**
  * @author Shawn Garner
@@ -12,7 +12,8 @@ object App extends Logging {
     new BruteForceNLP(stringToDecode, solution),
     new ActorNLP(stringToDecode, solution),
     new ActorStreamNLP(stringToDecode, solution),
-    new ActorStreamParrallelNLP(stringToDecode, solution)
+    new ActorStreamParrallelNLP(stringToDecode, solution),
+    new ActorStreamGeneticNLP(stringToDecode, solution)
   )
     .map(nlp => nlp.getClass.getSimpleName -> nlp)
     .toMap
