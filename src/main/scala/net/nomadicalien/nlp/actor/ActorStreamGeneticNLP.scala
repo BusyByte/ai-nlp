@@ -43,7 +43,15 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
     val losingLetters = sampleIndexedPool(numReplacements, numDistinctLetters).map(letters.apply).toSet
     val loosingSentenceLetters = letters.filter(losingLetters.contains)
     val replacementLetters = sampleIndexedPool(loosingSentenceLetters.size, numLetters).map(letterPool.apply)
-    base.swapMultiple(loosingSentenceLetters zip replacementLetters)
+    val replacementLettersWithoutDups = replacementLetters.foldLeft(List.empty[Letter]){
+      (acc, letter) =>
+      if(!acc.contains(letter)) {
+        letter :: acc
+      } else {
+        acc
+      }
+    }
+    base.swapMultiple(loosingSentenceLetters zip replacementLettersWithoutDups)
   }
 
   def receive = {
