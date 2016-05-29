@@ -1,7 +1,5 @@
 package net.nomadicalien.nlp
 
-import scala.collection.immutable.SortedSet
-
 
 object Sentence {
   val substituteChar : Char = 26.toChar
@@ -91,8 +89,10 @@ case class Sentence(stringToDecode : String) extends Logging {
   }
 
   private def determineProbabilityCorrect(wordList: List[Word]): Probability = {
+    val distinctWords = wordList.distinct
     val probability: Double =
-      wordList.map(_.probabilityCorrectByLetters).sum / wordList.size
+
+      distinctWords.map(_.probabilityCorrectByWord).sum / distinctWords.size
 
     probability
   }

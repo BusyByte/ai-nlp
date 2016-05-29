@@ -29,7 +29,13 @@ class SentenceSpec extends NLPSpec {
     "verifyProbabilityCorrect" in {
       val solutionSentence = new Sentence("The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year.")
       val probability: Probability = solutionSentence.probabilityCorrect
-      probability must beCloseTo(0.00487, 0.0001d)
+      probability must beCloseTo(0.00567, 0.0001d)
+    }
+
+    "verifyProbabilityCorrect on nonsense" in {
+      val solutionSentence = new Sentence("ean owuae sthonunhsn th ean etsws to huewowswhd whenddwgnhsn tha andi he ihuertrea stddngn wh eawa inhu")
+      val probability: Probability = solutionSentence.probabilityCorrect
+      probability must beCloseTo(0.00176, 0.0001d)
     }
 
     "verifyEquals" in {
