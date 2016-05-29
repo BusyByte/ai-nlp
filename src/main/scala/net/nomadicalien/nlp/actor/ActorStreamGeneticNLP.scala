@@ -40,7 +40,7 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
   def randomSample(base: Sentence): Sentence = {
     val letters = base.distinctLetters
     val numDistinctLetters = letters.size
-    val numReplacements: Int = math.max(rng.nextInt((numDistinctLetters/3)),3)
+    val numReplacements: Int = math.max(rng.nextInt((numDistinctLetters)),1)
     val losingLetters = sampleIndexedPool(numReplacements, numDistinctLetters).map(letters.apply).toSet
     val loosingSentenceLetters = letters.filter(losingLetters.contains)
     val replacementLetters = sampleIndexedPool(loosingSentenceLetters.size, numLetters).map(letterPool.apply)
@@ -55,6 +55,27 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
     }
     base.swapMultiple(loosingSentenceLetters zip replacementLettersWithoutDups)
   }
+
+  def leastLikelyWordSample(base: Sentence): Sentence = {
+    val letters = base.findLeastLikelyWord().letters.toList.distinct
+    val numDistinctLetters = letters.size
+    val numReplacements: Int = math.max(rng.nextInt(numDistinctLetters), 1)
+    val losingLetters = sampleIndexedPool(numReplacements, numDistinctLetters).map(letters.apply).toSet
+    val loosingSentenceLetters = letters.filter(losingLetters.contains)
+    val replacementLetters = sampleIndexedPool(loosingSentenceLetters.size, numLetters).map(letterPool.apply)
+        .filterNot( r => losingLetters.contains(r))
+    val replacementLettersWithoutDups = replacementLetters.foldLeft(List.empty[Letter]){
+      (acc, letter) =>
+      if(!acc.contains(letter)) {
+        letter :: acc
+      } else {
+        acc
+      }
+    }
+    base.swapMultiple(loosingSentenceLetters zip replacementLettersWithoutDups)
+  }
+
+
 
   def receive = {
     case Request(_) =>
@@ -78,20 +99,41 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
   }
 
   def fullFillDemand(theDemand: Int): Unit = {
-    val (randomSamples, pooledSamples) = chooseSampleTypes(theDemand.toInt).partition(isRandom => isRandom)
+    val groupedSampleTypes = chooseSampleTypes(theDemand.toInt).groupBy(s =>s)
+
+    val randomSamples = groupedSampleTypes.getOrElse(RandomSample, List.empty[SamplingType])
+
     randomSamples.map(_ => randomSample(encryptedSentence)).foreach(onNext)
+
+    val pooledSamples = groupedSampleTypes.getOrElse(RandomPooledSample, List.empty[SamplingType])
 
     sampleIndexedPool(pooledSamples.size, pool.size)
       .map(pool.apply)
       .map(randomSample)
       .foreach(onNext)
+
+    val leastLikelyWordPooledSamples = groupedSampleTypes.getOrElse(LeastLikelyWordPooledSample, List.empty[SamplingType])
+    sampleIndexedPool(leastLikelyWordPooledSamples.size, pool.size)
+      .map(pool.apply)
+      .map(leastLikelyWordSample)
+      .foreach(onNext)
   }
 
+  sealed trait SamplingType
+  case object RandomSample extends SamplingType
+  case object RandomPooledSample extends SamplingType
+  case object LeastLikelyWordPooledSample extends SamplingType
 
-
-  def chooseSampleTypes(n: Int): Seq[Boolean] = {
+  def chooseSampleTypes(n: Int): Seq[SamplingType] = {
     Stream.continually {
-      rng.nextInt(100) < 10
+      val sampleTypeNumber = rng.nextInt(100)
+      if(sampleTypeNumber < 10) {
+        RandomSample
+      }else if (sampleTypeNumber >= 10 && sampleTypeNumber < 20) {
+        LeastLikelyWordPooledSample
+      } else {
+        RandomPooledSample
+      }
     }.take(n)
   }
 
@@ -107,7 +149,7 @@ class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscri
 
   val priorityQueue = new mutable.PriorityQueue[Sentence]
 
-  override val requestStrategy = new MaxInFlightRequestStrategy(max = 1000) {
+  override val requestStrategy = new MaxInFlightRequestStrategy(max = 10) {
     override def inFlightInternally: Int = 0
   }
 
@@ -161,7 +203,7 @@ class ActorStreamGeneticNLP(stringToDecode: String, solution: String) extends Na
     Source.actorPublisher[Sentence](Props(classOf[ActorSentencePermSource], encryptedSentence))
 
   val sentenceFlow: Flow[Sentence, Sentence, NotUsed] =
-    Flow[Sentence].grouped(1000).map { group =>
+    Flow[Sentence].grouped(10).map { group =>
       group.reduce { (s1: Sentence, s2: Sentence) =>
         if(s1.probabilityCorrect > s2.probabilityCorrect)
           s1
@@ -172,7 +214,7 @@ class ActorStreamGeneticNLP(stringToDecode: String, solution: String) extends Na
 
   import GraphDSL.Implicits._
   val sentenceGenerator: Flow[Sentence, Sentence, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit builder =>
-    val workerCount = 5
+    val workerCount = 7
     val balancer = builder.add(Balance[Sentence](workerCount))
     val merge = builder.add(Merge[Sentence](workerCount))
 

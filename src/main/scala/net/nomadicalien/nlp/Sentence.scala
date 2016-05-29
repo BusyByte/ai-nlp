@@ -70,7 +70,7 @@ case class Sentence(stringToDecode : String) extends Logging {
   }
 
   def findLeastLikelyWord() : Word = {
-    words.sortWith {(lhs, rhs)=> lhs.probabilityCorrectByLetters < rhs.probabilityCorrectByLetters}.head
+    words.sortWith {(lhs, rhs)=> lhs.probabilityCorrectByWord < rhs.probabilityCorrectByWord}.head
   }
 
   override def toString: String  = encodedString
