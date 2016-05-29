@@ -11,15 +11,15 @@ object Word {
 }
 
 case class Word(letters: String) {
-  val hasVowel  = Word.vowelPattern.matcher(letters).matches()
+  lazy val hasVowel = Word.vowelPattern.matcher(letters).matches()
 
-  val hasAllVowels =  Word.onlyVowelPattern.matcher(letters).matches()
+  lazy val hasAllVowels =  Word.onlyVowelPattern.matcher(letters).matches()
 
-  val hasAllConsonants = Word.onlyConsonantsPattern.matcher(letters).matches()
+  lazy val hasAllConsonants = Word.onlyConsonantsPattern.matcher(letters).matches()
 
-  val probabilityCorrectByLetters: Probability = determineProbCorrect(determineCharProbs())
+  lazy val probabilityCorrectByLetters: Probability = determineProbCorrect(determineCharProbs())
 
-  val probabilityCorrectByWord: Probability = determineProbabilityWordIsCorrect()
+  lazy val probabilityCorrectByWord: Probability = determineProbabilityWordIsCorrect()
 
   private def determineCharProbs(): List[LetterProb] = {
     val (_, reverseCharProbList) = letters.foldLeft((None: Option[Char], List[LetterProb]()))(
@@ -52,7 +52,7 @@ case class Word(letters: String) {
 
     val wordSize = letters.length
 
-    if (hasAllConsonants || !hasVowel || (wordSize > 1 && hasAllVowels)) {
+    if (hasAllConsonants || (wordSize > 1 && hasAllVowels) || !hasVowel) {
       return 0.0d
     }
     val wordRankingList: List[WordRanking] = WordFrequency.getRankingList(wordSize)

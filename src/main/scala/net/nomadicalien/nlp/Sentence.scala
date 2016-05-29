@@ -1,10 +1,14 @@
 package net.nomadicalien.nlp
 
+import net.nomadicalien.nlp.Sentence.{ReplacementLetter, LosingLetter}
+
 
 object Sentence {
   val substituteChar : Char = 26.toChar
   val NON_ALPHA_PATTERN : String = "[^\\p{Alpha}]+"
   val ALPHA_PATTERN : String = "[\\p{Alpha}]+"
+  type LosingLetter = Letter
+  type ReplacementLetter = Letter
 }
 
 object SentenceOrdering extends Ordering[Sentence]  {
@@ -29,13 +33,13 @@ object SentenceOrdering extends Ordering[Sentence]  {
  * Created: 4/11/13 10:49 PM
  */
 case class Sentence(stringToDecode : String) extends Logging {
-  val encodedString: String = stringToDecode.collect {
+  lazy val encodedString: String = stringToDecode.collect {
     case c: Char if c.isLetter || c.isWhitespace => c.toLower
   }
 
-  val words: List[Word] = encodedString.split(Sentence.NON_ALPHA_PATTERN).distinct.map(new Word(_)).toList
+  lazy val words: List[Word] = encodedString.split(Sentence.NON_ALPHA_PATTERN).distinct.map(new Word(_)).toList
 
-  val probabilityCorrect: Probability = determineProbabilityCorrect(words)
+  lazy val probabilityCorrect: Probability = determineProbabilityCorrect(words)
 
   lazy val distinctLetters: List[Letter] = encodedString.distinct.toList.collect {
     case c: Char if c.isLetter => c
@@ -44,16 +48,15 @@ case class Sentence(stringToDecode : String) extends Logging {
   /**
    * Will swap letters without regard to case.
    */
-  def swap(losingLetter: Letter, candidateLetter: Letter): Sentence = Sentence(swapString(encodedString, losingLetter, candidateLetter))
+  def swap(losingLetter: LosingLetter, candidateLetter: ReplacementLetter): Sentence = Sentence(swapString(encodedString, losingLetter, candidateLetter))
 
-  def swapMultiple(swaps: List[(Letter, Letter)]): Sentence = {
-    val losers = swaps.map {it => (it._1, it._2)}.toMap
-    val candidates = swaps.map {it => (it._2, it._1)}.toMap
 
+  def swapMultiple(swaps: Map[LosingLetter, ReplacementLetter]): Sentence = {
+    val reversSwaps: Map[ReplacementLetter, LosingLetter] = swaps.map {p => p.swap}
     Sentence(
       encodedString.map {
         theChar: Char =>
-          losers.getOrElse(theChar, candidates.getOrElse(theChar, theChar))
+          swaps.getOrElse(theChar, reversSwaps.getOrElse(theChar, theChar))
       }
     )
   }

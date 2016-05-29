@@ -25,7 +25,7 @@ class ActorStreamNLP(stringToDecode: String, solution: String) extends NaturalLa
     permSource.async
       .map {perm :List[Char] =>
       val zipped = encryptedSentence.distinctLetters zip perm.reverse
-      encryptedSentence.swapMultiple(zipped)
+      encryptedSentence.swapMultiple(zipped.toMap)
     }
 
   val runnable: RunnableGraph[Future[Sentence]] = sentenceSource.async.toMat(Sink.fold(encryptedSentence)(sentenceMax))(Keep.right)

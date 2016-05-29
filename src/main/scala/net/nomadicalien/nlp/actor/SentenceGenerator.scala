@@ -46,7 +46,7 @@ class SentenceGenerator(encryptedSentence: Sentence) extends Actor with Logging 
     implicit val ec = context.dispatcher
     Future {
       val zipped = encryptedSentence.distinctLetters zip perm
-      comparator ! encryptedSentence.swapMultiple(zipped)
+      comparator ! encryptedSentence.swapMultiple(zipped.toMap)
       WorkDone
     } pipeTo self
   }

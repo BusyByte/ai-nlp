@@ -6,10 +6,15 @@ class SentenceSpec extends NLPSpec {
 
   "this" should {
 
+    "verifyLeastLikelyWord" in {
+      val testSentence = new Sentence("the first conference on the topic of artificiaq inteqqikence mas hequ at uartjoxth coqqeke in this year")
+      testSentence.findLeastLikelyWord().letters must_== "artificiaq"
+    }
+
     "verifySwapMultiple" in {
-      val swaps = List(('t', 'a'), ('l', 'p'))
+      val swaps = Map('t' -> 'a', 'l' -> 'p')
       val swappedSentence = sentence.swapMultiple(swaps)
-      "ahe lreaay red btpp bounced tpong" must_== swappedSentence.toString
+      swappedSentence.toString must_== "ahe lreaay red btpp bounced tpong"
     }
 
     "verifySwap" in {

@@ -39,40 +39,33 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
 
   def randomSample(base: Sentence): Sentence = {
     val letters = base.distinctLetters
-    val numDistinctLetters = letters.size
-    val numReplacements: Int = math.max(rng.nextInt((numDistinctLetters)),1)
-    val losingLetters = sampleIndexedPool(numReplacements, numDistinctLetters).map(letters.apply).toSet
-    val loosingSentenceLetters = letters.filter(losingLetters.contains)
-    val replacementLetters = sampleIndexedPool(loosingSentenceLetters.size, numLetters).map(letterPool.apply)
-        .filterNot( r => losingLetters.contains(r))
-    val replacementLettersWithoutDups = replacementLetters.foldLeft(List.empty[Letter]){
-      (acc, letter) =>
-      if(!acc.contains(letter)) {
-        letter :: acc
-      } else {
-        acc
-      }
+    sampleDistinctLetters(letters, base)
+  }
+
+  @tailrec
+  final def sampleLetters(sampleSize: Int, letters:List[Letter], samples: List[Letter] = List.empty[Letter]):List[Letter] = {
+    if(samples.size == sampleSize || samples.size == letters.size) {
+      samples
+    } else {
+      val nextSampleNum = rng.nextInt(letters.size)
+      val sample = letters(nextSampleNum)
+      val remainingLetters = letters.filterNot(l => l == sample)
+      sampleLetters(sampleSize, remainingLetters, sample::samples)
     }
-    base.swapMultiple(loosingSentenceLetters zip replacementLettersWithoutDups)
+  }
+
+  def sampleDistinctLetters(distinctLetters: List[Letter], base: Sentence) = {
+    val numDistinctLetters = distinctLetters.size
+    val numReplacements: Int = rng.nextInt(math.max(numDistinctLetters/2, 1)) + 1
+    val losingLetters = sampleLetters(numReplacements, distinctLetters)
+    val replacementPool = letterPool.filterNot(losingLetters.contains).toList
+    val replacementLetters = sampleLetters(losingLetters.size, replacementPool)
+    base.swapMultiple((losingLetters zip replacementLetters).toMap)
   }
 
   def leastLikelyWordSample(base: Sentence): Sentence = {
     val letters = base.findLeastLikelyWord().letters.toList.distinct
-    val numDistinctLetters = letters.size
-    val numReplacements: Int = math.max(rng.nextInt(numDistinctLetters), 1)
-    val losingLetters = sampleIndexedPool(numReplacements, numDistinctLetters).map(letters.apply).toSet
-    val loosingSentenceLetters = letters.filter(losingLetters.contains)
-    val replacementLetters = sampleIndexedPool(loosingSentenceLetters.size, numLetters).map(letterPool.apply)
-        .filterNot( r => losingLetters.contains(r))
-    val replacementLettersWithoutDups = replacementLetters.foldLeft(List.empty[Letter]){
-      (acc, letter) =>
-      if(!acc.contains(letter)) {
-        letter :: acc
-      } else {
-        acc
-      }
-    }
-    base.swapMultiple(loosingSentenceLetters zip replacementLettersWithoutDups)
+    sampleDistinctLetters(letters, base)
   }
 
 
@@ -101,13 +94,9 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
   def fullFillDemand(theDemand: Int): Unit = {
     val groupedSampleTypes = chooseSampleTypes(theDemand.toInt).groupBy(s =>s)
 
-    val randomSamples = groupedSampleTypes.getOrElse(RandomSample, List.empty[SamplingType])
+    val randomPooledSamples = groupedSampleTypes.getOrElse(RandomPooledSample, List.empty[SamplingType])
 
-    randomSamples.map(_ => randomSample(encryptedSentence)).foreach(onNext)
-
-    val pooledSamples = groupedSampleTypes.getOrElse(RandomPooledSample, List.empty[SamplingType])
-
-    sampleIndexedPool(pooledSamples.size, pool.size)
+    sampleIndexedPool(randomPooledSamples.size, pool.size)
       .map(pool.apply)
       .map(randomSample)
       .foreach(onNext)
@@ -120,7 +109,6 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
   }
 
   sealed trait SamplingType
-  case object RandomSample extends SamplingType
   case object RandomPooledSample extends SamplingType
   case object LeastLikelyWordPooledSample extends SamplingType
 
@@ -128,8 +116,6 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
     Stream.continually {
       val sampleTypeNumber = rng.nextInt(100)
       if(sampleTypeNumber < 10) {
-        RandomSample
-      }else if (sampleTypeNumber >= 10 && sampleTypeNumber < 20) {
         LeastLikelyWordPooledSample
       } else {
         RandomPooledSample
@@ -147,7 +133,7 @@ class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscri
     override def compare(x: Sentence, y: Sentence): Int = Ordering.Double.compare(x.probabilityCorrect, y.probabilityCorrect)
   }
 
-  val priorityQueue = new mutable.PriorityQueue[Sentence]
+  val bestMatchQueue = new mutable.PriorityQueue[Sentence]
 
   override val requestStrategy = new MaxInFlightRequestStrategy(max = 10) {
     override def inFlightInternally: Int = 0
@@ -155,12 +141,12 @@ class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscri
 
   def receive = {
     case OnNext(s: Sentence) =>
-      if(rng.nextInt(10000) == 0) {
+      if(rng.nextInt(100000) == 0) {
         logSentence("SANITY CHECK", s)
       }
 
-      if(!priorityQueue.toSet.contains(s)) {
-        priorityQueue.enqueue(s)
+      if(!bestMatchQueue.toSet.contains(s)) {
+        bestMatchQueue.enqueue(s)
         if(s == solutionSentence) {
           logSentence("***FOUND IT***", s)
           logger.info("!!shutting down!!!")
@@ -172,16 +158,15 @@ class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscri
         }
       }
 
-      if(priorityQueue.size > 1000) {
-        logSentence("BEST", priorityQueue.head)
-        val best100 = Stream.continually {
-          priorityQueue.dequeue()
+
+      if(bestMatchQueue.size > 1000) {
+        logSentence("BEST", bestMatchQueue.head)
+        val best = Stream.continually {
+          bestMatchQueue.dequeue()
         }.take(100).toList
-        best100.foreach(logSentence("TOP 100", _))
-        context.system.eventStream.publish(ReplacePool(best100))
-        priorityQueue.clear()
-        priorityQueue.enqueue(best100 :_*)
-        logSentence("BEST", priorityQueue.head)
+        bestMatchQueue.clear()
+        bestMatchQueue.enqueue(best :_*)
+        context.system.eventStream.publish(ReplacePool(best))
       }
   }
 

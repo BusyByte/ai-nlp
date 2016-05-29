@@ -25,7 +25,7 @@ class ActorStreamParrallelNLP(stringToDecode: String, solution: String) extends 
   val sentenceFlow: Flow[List[Char], Sentence, NotUsed] =
     Flow[List[Char]].map { perm =>
       val zipped = encryptedSentence.distinctLetters zip perm.reverse
-      encryptedSentence.swapMultiple(zipped)
+      encryptedSentence.swapMultiple(zipped.toMap)
     }
 
   import GraphDSL.Implicits._

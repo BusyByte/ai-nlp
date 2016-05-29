@@ -29,7 +29,7 @@ class BruteForceNLP(stringToDecode: String, solution: String) extends NaturalLan
     } else {
       val currentPerm: List[Letter] = perms.next()
       val zippedReplacements = sentenceLetters zip currentPerm
-      val newSentence = sentence.swapMultiple(zippedReplacements)
+      val newSentence = sentence.swapMultiple(zippedReplacements.toMap)
 
       if(stepCount % 1000000 == 0) {
         logger.info(s"Current Perm [${currentPerm.mkString}]")
