@@ -1,6 +1,7 @@
 package net.nomadicalien.nlp.actor
 
 import java.security.SecureRandom
+import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor._
@@ -12,8 +13,8 @@ import akka.stream.scaladsl._
 import net.nomadicalien.nlp._
 
 import scala.annotation.tailrec
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Await}
+import scala.concurrent.duration.{FiniteDuration, Duration}
 import scala.util.Random
 
 case class ReplacePool(newPool: List[Sentence])
@@ -43,6 +44,7 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
     val losingLetters = sampleIndexedPool(numReplacements, numDistinctLetters).map(letters.apply).toSet
     val loosingSentenceLetters = letters.filter(losingLetters.contains)
     val replacementLetters = sampleIndexedPool(loosingSentenceLetters.size, numLetters).map(letterPool.apply)
+        .filterNot( r => losingLetters.contains(r))
     val replacementLettersWithoutDups = replacementLetters.foldLeft(List.empty[Letter]){
       (acc, letter) =>
       if(!acc.contains(letter)) {
@@ -95,7 +97,7 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
 
 }
 
-class GeneticSelectionActor extends ActorSubscriber with Logging{
+class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscriber with Logging{
   import scala.collection.mutable
   val rng = new Random()
 
@@ -117,6 +119,15 @@ class GeneticSelectionActor extends ActorSubscriber with Logging{
 
       if(!priorityQueue.toSet.contains(s)) {
         priorityQueue.enqueue(s)
+        if(s == solutionSentence) {
+          logSentence("***FOUND IT***", s)
+          logger.info("!!shutting down!!!")
+          implicit val ec: ExecutionContext = context.system.dispatcher
+          context.system.scheduler.scheduleOnce(FiniteDuration(2l, TimeUnit.SECONDS), new Runnable {
+            def run() = {context.system.terminate()}
+          })
+
+        }
       }
 
       if(priorityQueue.size > 1000) {
@@ -172,7 +183,7 @@ class ActorStreamGeneticNLP(stringToDecode: String, solution: String) extends Na
     FlowShape(balancer.in, merge.out)
   })
 
-  val runnable: RunnableGraph[NotUsed] = permSource.async.via(sentenceGenerator).toMat(Sink.actorSubscriber(Props[GeneticSelectionActor]))(Keep.none)
+  val runnable: RunnableGraph[NotUsed] = permSource.async.via(sentenceGenerator).toMat(Sink.actorSubscriber(Props(classOf[GeneticSelectionActor], solutionSentence)))(Keep.none)
 
   override def process(): Sentence = {
     logger.info(s"ENCRYPTED     [$encryptedSentence]")
