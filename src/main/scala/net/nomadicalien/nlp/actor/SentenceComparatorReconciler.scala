@@ -11,16 +11,16 @@ import scala.util.Success
  */
 class SentenceComparatorReconciler(p: Promise[Sentence], encryptedSentence: Sentence, solutionSentence: Sentence) extends Actor with Logging {
   var currentMax: Sentence = encryptedSentence
-  var stepCount:Long = 0
+  var stepCount: Long = 0
 
   context.system.eventStream.subscribe(self, classOf[NewMax])
   context.system.eventStream.subscribe(self, classOf[CompleteResult])
 
-  override def receive: Actor.Receive = {
+  def receive: Actor.Receive = {
     case NewMax(s) =>
       stepCount = stepCount + 1
       if(stepCount % 1000000 == 0) {
-        logSentence("RECONILED SANITY CHECK", s)
+        logSentence("RECONCILED SANITY CHECK", s)
       }
 
       if(s.probabilityCorrect > currentMax.probabilityCorrect) {

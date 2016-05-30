@@ -21,33 +21,44 @@
         <encoding>UTF-8</encoding>
     </properties>
 
-    <!--
-      <repositories>
-        <repository>
-          <id>scala-tools.org</id>
-          <name>Scala-Tools Maven2 Repository</name>
-          <url>http://scala-tools.org/repo-releases</url>
-        </repository>
-      </repositories>
-
-      <pluginRepositories>
-        <pluginRepository>
-          <id>scala-tools.org</id>
-          <name>Scala-Tools Maven2 Repository</name>
-          <url>http://scala-tools.org/repo-releases</url>
-        </pluginRepository>
-      </pluginRepositories>
-    -->
     <dependencies>
+
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.11.4</version>
+            <version>2.11.8</version>
         </dependency>
-        <!--
-            compile 'com.google.guava:guava:13.0.1'
-            compile 'org.apache.directory.studio:org.apache.commons.collections:3.2.1'
-        -->
+
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-actor_2.11</artifactId>
+            <version>2.4.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-stream_2.11</artifactId>
+            <version>2.4.6</version>
+        </dependency>
+
+<!--        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-stream-experimental_2.11</artifactId>
+            <version>2.0-M2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-http-core-experimental_2.11</artifactId>
+            <version>2.0-M2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-http-experimental_2.11</artifactId>
+            <version>2.0-M2</version>
+        </dependency>-->
+
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
@@ -60,34 +71,16 @@
         </dependency>
 
         <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.11</artifactId>
-            <version>2.3.8</version>
+            <groupId>org.specs2</groupId>
+            <artifactId>specs2-core_2.11</artifactId>
+            <version>3.6.5</version>
+            <scope>test</scope>
         </dependency>
 
-        <!-- Test -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-            <scope>test</scope>
-        </dependency>
-<!--        <dependency>
             <groupId>org.specs2</groupId>
-            <artifactId>specs2_2.11</artifactId>
-            <version>2.4.8</version>
-            <scope>test</scope>
-        </dependency>-->
-        <dependency>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.11</artifactId>
-            <version>3.0.0-SNAP4</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>1.10.8</version>
+            <artifactId>specs2-junit_2.11</artifactId>
+            <version>3.6.5</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -112,38 +105,45 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.6</version>
+                <version>2.4.3</version>
                 <configuration>
-                    <useFile>false</useFile>
-                    <disableXmlReport>true</disableXmlReport>
-                    <!-- If you have classpath issue like NoDefClassError,... -->
-                    <!-- useManifestOnlyJar>false</useManifestOnlyJar -->
+                    <useSystemClassLoader>false</useSystemClassLoader>
+                    <argLine>-Xmx512m</argLine>
                     <includes>
-                        <include>**/*Test.*</include>
-                        <include>**/*Suite.*</include>
+                        <include>**/*Unit.java</include>
+                        <include>**/*Spec.java</include>
                     </includes>
                 </configuration>
             </plugin>
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.5</version>
-                <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <archive>
-                        <manifest>
-                            <mainClass>net.nomadicalien.nlp.App</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.4.3</version>
                 <executions>
                     <execution>
-                        <id>make-assembly</id> <!-- this is used for inheritance merges -->
-                        <phase>package</phase> <!-- bind to the packaging phase -->
+                        <phase>package</phase>
                         <goals>
-                            <goal>single</goal>
+                            <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>with-deps</shadedClassifierName>
+                            <artifactSet>
+                                <includes>
+                                    <include>*:*</include>
+                                </includes>
+                            </artifactSet>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>reference.conf</resource>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Main-Class>net.nomadicalien.nlp.App</Main-Class>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
