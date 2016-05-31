@@ -92,7 +92,7 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
   }
 
   def fullFillDemand(theDemand: Int): Unit = {
-    val groupedSampleTypes = chooseSampleTypes(theDemand.toInt).groupBy(s =>s)
+    val groupedSampleTypes = chooseSampleTypes(theDemand).groupBy(s =>s)
 
     val randomPooledSamples = groupedSampleTypes.getOrElse(RandomPooledSample, List.empty[SamplingType])
 

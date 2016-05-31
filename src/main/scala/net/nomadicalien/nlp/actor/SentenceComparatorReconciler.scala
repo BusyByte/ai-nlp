@@ -35,7 +35,7 @@ class SentenceComparatorReconciler(p: Promise[Sentence], encryptedSentence: Sent
     case CompleteResult =>
       p.complete(Success(currentMax))
       context.stop(self)
-      context.system.shutdown()
+      context.system.terminate()
   }
 
   def logSentence(label: String, currentSentence: Sentence) = {
