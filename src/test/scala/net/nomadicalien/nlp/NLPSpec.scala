@@ -1,6 +1,5 @@
 package net.nomadicalien.nlp
 
-import org.specs2.mutable.SpecificationWithJUnit
+import org.specs2.mutable.Specification
 
-
-trait NLPSpec extends SpecificationWithJUnit
+trait NLPSpec extends Specification
