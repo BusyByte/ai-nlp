@@ -22,3 +22,4 @@ assemblyJarName in assembly := "ai-nlp-with-deps.jar"
 
 mainClass in assembly := Some("net.nomadicalien.nlp.App")
 
+addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.14")
