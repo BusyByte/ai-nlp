@@ -14,9 +14,9 @@ libraryDependencies ++= Seq(
   "org.specs2" %% "specs2-core" % "3.8.3" % Test
 )
 
-scalacOptions ++= Seq("-unchecked", "-deprecation")
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xlint")
 
-scalacOptions in Test ++= Seq("-Yrangepos")
+scalacOptions in Test ++= Seq("-Yrangepos", "-Xlint")
 
 assemblyJarName in assembly := "ai-nlp-with-deps.jar"
 
