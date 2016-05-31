@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/BusyByte/ai-nlp.svg?branch=master)](https://travis-ci.org/BusyByte/ai-nlp)
+
 ai-nlp
 ======
 
