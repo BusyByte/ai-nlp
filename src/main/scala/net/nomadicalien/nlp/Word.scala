@@ -34,7 +34,7 @@ case class Word(letters: String) {
             if (currentLetter == priorLetter) {
               LetterFrequency.doubleLetterProbabilityOf(currentLetter).getOrElse(0.0d)
             } else {
-              BiGram.biGramLookup(currentLetter + "|" + priorLetter)
+              BiGram.probOfAGivenB(currentLetter, priorLetter)
             }
           }
         }

@@ -1,9 +1,5 @@
 package net.nomadicalien.nlp
 
-/**
- * @author Shawn Garner
- * Created: 3/30/13 7:16 AM
- */
 case class LetterProb(letter: Letter, probability: Probability = 0.0d)
 
 object LetterProb {

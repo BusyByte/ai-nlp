@@ -4,22 +4,21 @@ import akka.actor.Actor
 import net.nomadicalien.nlp.{Logging, ProbFormatter, Sentence}
 
 import scala.concurrent.Promise
-import scala.util.Success
+import scala.util.{Random, Success}
 
 /**
  * Created by Shawn on 12/16/2014.
  */
 class SentenceComparatorReconciler(p: Promise[Sentence], encryptedSentence: Sentence, solutionSentence: Sentence) extends Actor with Logging {
   var currentMax: Sentence = encryptedSentence
-  var stepCount: Long = 0
+  val random = new Random()
 
   context.system.eventStream.subscribe(self, classOf[NewMax])
   context.system.eventStream.subscribe(self, classOf[CompleteResult])
 
   def receive: Actor.Receive = {
     case NewMax(s) =>
-      stepCount = stepCount + 1
-      if(stepCount % 1000000 == 0) {
+      if(random.nextInt(1000000) == 0) {
         logSentence("RECONCILED SANITY CHECK", s)
       }
 

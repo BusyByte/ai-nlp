@@ -1,10 +1,9 @@
 package net.nomadicalien.nlp
 
 import net.nomadicalien.nlp.actor._
+import net.nomadicalien.nlp.actor.stream.genetic.ActorStreamGeneticNLP
+import net.nomadicalien.nlp.actor.stream.{ActorStreamParrallelNLP, ActorStreamNLP}
 
-/**
- * @author Shawn Garner
- */
 object App extends Logging {
   val stringToDecode = "Esp qtcde nzyqpcpynp zy esp ezatn zq Lcetqtntlw Tyepwwtrpynp hld spwo le Olcexzfes Nzwwprp ty estd jplc."
   val solution = "The first conference on the topic of Artificial Intelligence was held at Dartmouth College in this year."

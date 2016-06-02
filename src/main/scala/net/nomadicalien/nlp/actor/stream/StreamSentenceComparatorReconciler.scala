@@ -1,7 +1,8 @@
-package net.nomadicalien.nlp.actor
+package net.nomadicalien.nlp.actor.stream
 
 import akka.actor.Actor
-import net.nomadicalien.nlp.{ProbFormatter, Logging, Sentence}
+import net.nomadicalien.nlp.actor.NewMax
+import net.nomadicalien.nlp.{Logging, ProbFormatter, Sentence}
 
 import scala.util.Random
 

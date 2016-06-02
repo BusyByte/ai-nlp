@@ -1,16 +1,16 @@
-package net.nomadicalien.nlp.actor
+package net.nomadicalien.nlp.actor.stream
 
 import akka.NotUsed
 import akka.actor._
 import akka.stream._
 import akka.stream.scaladsl._
+import net.nomadicalien.nlp.actor.NewMax
 import net.nomadicalien.nlp.{Logging, NaturalLanguageProcessor, ProbFormatter, Sentence}
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Future, Await, Promise}
-import scala.util.{Success, Random}
+import scala.concurrent.{Await, Future}
 
-class ActorStreamNLP(stringToDecode: String, solution: String) extends NaturalLanguageProcessor with Logging {
+class ActorStreamParrallelNLP(stringToDecode: String, solution: String) extends NaturalLanguageProcessor with Logging {
   val encryptedSentence = new Sentence(stringToDecode)
   val solutionSentence = new Sentence(solution)
 
@@ -20,15 +20,29 @@ class ActorStreamNLP(stringToDecode: String, solution: String) extends NaturalLa
   val reconciler = actorSystem.actorOf(Props(classOf[StreamSentenceComparatorReconciler], encryptedSentence, solutionSentence))
 
   val perms = () => ('a' to 'z').toList.permutations
-  val permSource: Source[List[Char], NotUsed] = Source.fromIterator[List[Char]](perms)
-  val sentenceSource: Source[Sentence, NotUsed] =
-    permSource.async
-      .map {perm :List[Char] =>
+  val permSource: Source[List[Char], NotUsed] =
+    Source.fromIterator[List[Char]](perms)
+
+  val sentenceFlow: Flow[List[Char], Sentence, NotUsed] =
+    Flow[List[Char]].map { perm =>
       val zipped = encryptedSentence.distinctLetters zip perm.reverse
       encryptedSentence.swapMultiple(zipped.toMap)
     }
 
-  val runnable: RunnableGraph[Future[Sentence]] = sentenceSource.async.toMat(Sink.fold(encryptedSentence)(sentenceMax))(Keep.right)
+  import GraphDSL.Implicits._
+  val sentenceGenerator: Flow[List[Char], Sentence, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit builder =>
+    val workerCount = 5
+    val balancer = builder.add(Balance[List[Char]](workerCount))
+    val merge = builder.add(Merge[Sentence](workerCount))
+
+    for (_ <- 1 to workerCount) {
+      balancer ~> sentenceFlow.async ~> merge
+    }
+
+    FlowShape(balancer.in, merge.out)
+  })
+
+  val runnable: RunnableGraph[Future[Sentence]] = permSource.async.via(sentenceGenerator).toMat(Sink.fold(encryptedSentence)(sentenceMax))(Keep.right)
 
   override def process(): Sentence = {
     logger.info(s"ENCRYPTED     [$encryptedSentence]")

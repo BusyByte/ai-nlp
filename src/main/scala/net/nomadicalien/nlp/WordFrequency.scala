@@ -3,12 +3,7 @@ package net.nomadicalien.nlp
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable
 
-/**
- * User: Shawn Garner
- * Created: 4/11/13 10:47 PM
- */
 object WordFrequency {
-
 
   case class WordRanking(rank : Int, word : String, probability : Double)
 

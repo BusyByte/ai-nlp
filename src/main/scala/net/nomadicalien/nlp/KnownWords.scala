@@ -3,10 +3,6 @@ package net.nomadicalien.nlp
 import scala.collection.mutable
 import scala.io.BufferedSource
 
-/**
- * User: Shawn Garner
- * Created: 4/21/13 8:52 PM
- */
 object KnownWords {
   val wordFiles = List(
     "english-words.10.words",

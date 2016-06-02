@@ -28,10 +28,6 @@ object SentenceOrdering extends Ordering[Sentence]  {
     }
 }
 
-/**
- * User: Shawn Garner
- * Created: 4/11/13 10:49 PM
- */
 case class Sentence(stringToDecode : String) extends Logging {
   lazy val encodedString: String = stringToDecode.collect {
     case c: Char if c.isLetter || c.isWhitespace => c.toLower

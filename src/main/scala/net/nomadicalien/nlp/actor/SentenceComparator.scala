@@ -5,19 +5,17 @@ import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
 import net.nomadicalien.nlp.{Logging, ProbFormatter, Sentence}
 
 import scala.concurrent.Promise
-import scala.util.Success
+import scala.util.{Random, Success}
 
 /**
  * Created by Shawn on 12/16/2014.
  */
 class SentenceComparator extends Actor with Logging {
   var currentMax: Option[Sentence] = None
-  var stepCount:Long = 0
+  val random = new Random()
 
   override def receive: Actor.Receive = {
     case s: Sentence =>
-      stepCount = stepCount + 1
-
 
       if(currentMax.isEmpty || s.probabilityCorrect > currentMax.get.probabilityCorrect) {
         logSentence("NEW MAX", s)
@@ -25,7 +23,7 @@ class SentenceComparator extends Actor with Logging {
         context.system.eventStream.publish(NewMax(s))
       }
 
-      if(stepCount % 1000000 == 0) {
+      if(random.nextInt(1000000) == 0) {
         logSentence("SANITY CHECK", s)
       }
   }

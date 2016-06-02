@@ -6,14 +6,13 @@ import scala.collection.mutable
 import akka.pattern.pipe
 
 import scala.concurrent.Future
+import scala.util.Random
 
-/**
- * Created by Shawn on 12/16/2014.
- */
 class SentenceGenerator(encryptedSentence: Sentence) extends Actor with Logging {
   val comparator = context.actorOf(Props[SentenceComparator])
   val generator = context.system.actorSelection("/user/PermutationGenerator")
-  var stepCount: Long = 0
+  val random = new Random()
+
   var working = false
 
   val workQueue = mutable.Queue[List[Char]]()
@@ -23,8 +22,7 @@ class SentenceGenerator(encryptedSentence: Sentence) extends Actor with Logging 
 
   override def receive: Actor.Receive = {
     case Permutation(perm) =>
-      stepCount = stepCount + 1
-      if(stepCount % 1000000 == 0) {
+      if(random.nextInt(1000000) == 0) {
         logger.info(s"Current Perm [${perm.mkString}]")
       }
       if(working) {
