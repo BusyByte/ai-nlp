@@ -7,9 +7,6 @@ import net.nomadicalien.nlp.{Logging, ProbFormatter, Sentence}
 import scala.concurrent.Promise
 import scala.util.{Random, Success}
 
-/**
- * Created by Shawn on 12/16/2014.
- */
 class SentenceComparator extends Actor with Logging {
   var currentMax: Option[Sentence] = None
   val random = new Random()

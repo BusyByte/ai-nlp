@@ -1,35 +1,39 @@
 package net.nomadicalien.nlp.actor
 
-import akka.stream.actor.ActorPublisher
-import net.nomadicalien.nlp.Logging
+import akka.actor._
+import net.nomadicalien.nlp.{Logging, Sentence}
 
-import scala.annotation.tailrec
+import scala.collection.mutable
 
-class PermutationGenerator extends ActorPublisher[Permutation] with Logging {
-  import akka.stream.actor.ActorPublisherMessage._
-
+class PermutationGenerator(encryptedSentence: Sentence) extends Actor with Logging {
+  val workerRegistry = mutable.Set[ActorRef]()
   val perms = ('a' to 'z').toList.permutations
 
+  override def preStart() = (1 to numWorkers).foreach {number => context.actorOf(Props(classOf[SentenceGenerator], encryptedSentence),s"SentenceGenerator$number")}
   override def receive: Receive = {
-    case Request(_) =>
-      deliver()
-    case Cancel =>
-      context.stop(self)
+    case Start =>
+
+    case RegisterWorker =>
+      val theSender = sender()
+      if(!workerRegistry.contains(theSender)) {
+        context.watch(theSender)
+      }
+      sendWork(theSender)
+    case SendMoreWork =>
+      sendWork(sender())
+    case Terminated(theActorRef) =>
+      workerRegistry.remove(theActorRef)
+      if(workerRegistry.isEmpty) {
+        context.system.eventStream.publish(CompleteResult())
+        context.stop(self)
+      }
   }
 
-
-  @tailrec final def deliver(): Unit =
-    if (totalDemand > 0) {
-      val numToTake: Int = {
-        if (totalDemand <= Int.MaxValue) {
-          totalDemand.toInt
-        } else {
-          Int.MaxValue
-        }
-      }
-      perms.take(numToTake).map(Permutation).foreach(onNext)
-
-      deliver()
+  private def sendWork(theActor: ActorRef): Unit = {
+    if(perms.hasNext) {
+      perms.take(batchSize).foreach(theActor ! Permutation(_))
+    } else {
+      workerRegistry.foreach(_ ! Kill)
     }
-
+  }
 }
