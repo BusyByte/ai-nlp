@@ -3,7 +3,7 @@ package net.nomadicalien.nlp
 class WordFrequencySpec extends NLPSpec {
    "this" should {
      "verifyEasy" in {
-       val rank = WordFrequency.getRankingList(3).head
+       val rank = WordFrequency.getRankingList(3)("the")
        "the" must_== rank.word
        1 must_== rank.rank
        WordFrequency.ONE_THIRD must_== rank.probability

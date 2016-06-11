@@ -53,13 +53,7 @@ case class Word(letters: String) {
     if (hasAllConsonants || (wordSize > 1 && hasAllVowels)) {
       return 0.0d
     }
-    val wordRankingList: List[WordRanking] = WordFrequency.getRankingList(wordSize)
-
-    //FIXME: This is inefficient. should use a set or map
-    val wordRanking: Option[WordRanking] = wordRankingList.find {
-      theWordRanking: WordRanking =>
-        theWordRanking.word.equalsIgnoreCase(letters)//TODO: move to find method in WordFrequency to search by word
-    }
+    val wordRanking: Option[WordRanking] = WordFrequency.getWordRanking(letters)
 
     val probabilityCorrect : Double = {
       if (wordRanking.isDefined) {

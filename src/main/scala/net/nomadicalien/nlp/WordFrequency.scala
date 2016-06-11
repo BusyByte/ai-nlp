@@ -5,7 +5,7 @@ import scala.collection.mutable
 
 object WordFrequency {
 
-  case class WordRanking(rank : Int, word : String, probability : Double)
+  case class WordRanking(rank: Int, word: String, probability: Double)
 
   val ESTIMATE_NUMBER_WORDS_IN_ENGLISH : Double = 1000000.0d
   val ONE_THIRD : Double = (1.0d / 3.0d) / 25.0d// = 0.01333 = 0.333 %
@@ -13,8 +13,8 @@ object WordFrequency {
 
   private val sizeToWordRankingMap = createWordRankings()
 
-  private def createWordRankings()  : Map[Int, List[WordRanking]] = {
-    val tempMap = mutable.Map[Int, ListBuffer[WordRanking]]()
+  private def createWordRankings()  : Map[Int, Map[String, WordRanking]] = {
+    val tempMap = mutable.Map[Int, mutable.Map[String, WordRanking]]()
     addWordRanking(1, "the", ONE_THIRD, tempMap)
     addWordRanking(2, "be", ONE_THIRD, tempMap)
     addWordRanking(3, "to", ONE_THIRD, tempMap)
@@ -115,21 +115,25 @@ object WordFrequency {
     addWordRanking(98, "day", FIFTY_PERCENT, tempMap)
     addWordRanking(99, "most", FIFTY_PERCENT, tempMap)
     addWordRanking(100, "us", FIFTY_PERCENT, tempMap)
-    tempMap.mapValues[List[WordRanking]](_.toList).toMap
+    tempMap.mapValues[Map[String, WordRanking]](_.toMap).toMap
   }
 
 
 
 
-  private def addWordRanking(ranking : Int, word : String, probability : Double,  mapToUse  : mutable.Map[Int, ListBuffer[WordRanking]]) {
+  private def addWordRanking(ranking : Int, word : String, probability : Double,  mapToUse  : mutable.Map[Int, mutable.Map[String, WordRanking]]) {
     val length = word.length()
 
-    val rankingList = mapToUse.getOrElseUpdate(length, ListBuffer())
-    rankingList += WordRanking(ranking, word, probability)
+    val rankingList = mapToUse.getOrElseUpdate(length, mutable.Map.empty[String, WordRanking])
+    rankingList += (word -> WordRanking(ranking, word, probability))
   }
 
-  def getRankingList(length : Int) : List[WordRanking] = {
-    sizeToWordRankingMap.getOrElse(length, ListBuffer()).toList
+  def getRankingList(length : Int) : Map[String, WordRanking] = {
+    sizeToWordRankingMap.getOrElse(length, Map.empty[String, WordRanking])
+  }
+
+  def getWordRanking(word: String) : Option[WordRanking] = {
+    getRankingList(word.length).get(word)
   }
 
   /*
