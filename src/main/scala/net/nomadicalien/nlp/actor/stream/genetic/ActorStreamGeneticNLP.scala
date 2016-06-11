@@ -5,6 +5,7 @@ import akka.actor._
 import akka.stream._
 import akka.stream.scaladsl._
 import net.nomadicalien.nlp._
+import net.nomadicalien.nlp.actor._
 import net.nomadicalien.nlp.actor.stream.StreamSentenceComparatorReconciler
 
 import scala.concurrent.Await
@@ -31,7 +32,7 @@ class ActorStreamGeneticNLP(stringToDecode: String, solution: String) extends Na
 
   import GraphDSL.Implicits._
   val sentenceGenerator: Flow[Sentence, Sentence, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit builder =>
-    val workerCount = 7
+    val workerCount = numWorkers
     val balancer = builder.add(Balance[Sentence](workerCount))
     val merge = builder.add(Merge[Sentence](workerCount))
 

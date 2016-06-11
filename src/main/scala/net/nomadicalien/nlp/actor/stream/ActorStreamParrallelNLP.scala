@@ -4,7 +4,7 @@ import akka.NotUsed
 import akka.actor._
 import akka.stream._
 import akka.stream.scaladsl._
-import net.nomadicalien.nlp.actor.NewMax
+import net.nomadicalien.nlp.actor._
 import net.nomadicalien.nlp.{Logging, NaturalLanguageProcessor, ProbFormatter, Sentence}
 
 import scala.concurrent.duration.Duration
@@ -31,7 +31,7 @@ class ActorStreamParrallelNLP(stringToDecode: String, solution: String) extends 
 
   import GraphDSL.Implicits._
   val sentenceGenerator: Flow[List[Char], Sentence, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit builder =>
-    val workerCount = 5
+    val workerCount = numWorkers
     val balancer = builder.add(Balance[List[Char]](workerCount))
     val merge = builder.add(Merge[Sentence](workerCount))
 
