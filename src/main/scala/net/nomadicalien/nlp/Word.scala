@@ -5,13 +5,11 @@ import java.util.regex.Pattern
 import net.nomadicalien.nlp.WordFrequency.WordRanking
 
 object Word {
-  val vowelPattern = Pattern.compile("(.*)([aAeEiIoOuUyY]+)(.*)")
   val onlyVowelPattern = Pattern.compile("[aAeEiIoOuUyY]+")
   val onlyConsonantsPattern = Pattern.compile("[bBcCdDfFgGhHjJkKlLmMnNpPqQrRsStTvVxXzZwWyY]+")
 }
 
 case class Word(letters: String) {
-  lazy val hasVowel = Word.vowelPattern.matcher(letters).matches()
 
   lazy val hasAllVowels =  Word.onlyVowelPattern.matcher(letters).matches()
 
@@ -52,7 +50,7 @@ case class Word(letters: String) {
 
     val wordSize = letters.length
 
-    if (hasAllConsonants || (wordSize > 1 && hasAllVowels) || !hasVowel) {
+    if (hasAllConsonants || (wordSize > 1 && hasAllVowels)) {
       return 0.0d
     }
     val wordRankingList: List[WordRanking] = WordFrequency.getRankingList(wordSize)
