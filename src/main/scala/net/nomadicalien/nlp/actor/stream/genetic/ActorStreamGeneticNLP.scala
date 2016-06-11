@@ -24,13 +24,9 @@ class ActorStreamGeneticNLP(stringToDecode: String, solution: String) extends Na
     Source.actorPublisher[Sentence](Props(classOf[ActorSentencePermSource], encryptedSentence))
 
   val sentenceFlow: Flow[Sentence, Sentence, NotUsed] =
-    Flow[Sentence].grouped(10).map { group =>
-      group.reduce { (s1: Sentence, s2: Sentence) =>
-        if(s1.probabilityCorrect > s2.probabilityCorrect)
-          s1
-        else
-          s2
-      }
+    Flow[Sentence].map { sentence =>
+      val prob = sentence.probabilityCorrect
+      sentence
     }
 
   import GraphDSL.Implicits._
@@ -46,7 +42,7 @@ class ActorStreamGeneticNLP(stringToDecode: String, solution: String) extends Na
     FlowShape(balancer.in, merge.out)
   })
 
-  val runnable: RunnableGraph[NotUsed] = permSource.async.via(sentenceGenerator).toMat(Sink.actorSubscriber(Props(classOf[GeneticSelectionActor], solutionSentence)))(Keep.none)
+  val runnable: RunnableGraph[NotUsed] = permSource.async.via(sentenceGenerator).async.toMat(Sink.actorSubscriber(Props(classOf[GeneticSelectionActor], solutionSentence)))(Keep.none)
 
   override def process(): Sentence = {
     logger.info(s"ENCRYPTED     [$encryptedSentence]")

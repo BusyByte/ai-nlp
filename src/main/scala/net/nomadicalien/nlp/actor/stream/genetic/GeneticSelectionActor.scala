@@ -34,7 +34,7 @@ class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscri
         logSentence("SANITY CHECK", s)
       }
 
-      if(!bestMatchQueue.toSet.contains(s)) {
+      if(!bestMatchQueue.exists(s2 => s2 == s2)) {
         bestMatchQueue.enqueue(s)
         if(s == solutionSentence) {
           logSentence("***FOUND IT***", s)
@@ -48,7 +48,7 @@ class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscri
       }
 
 
-      if(bestMatchQueue.size > 1000) {
+      if(bestMatchQueue.size > 10000) {
         logSentence("BEST", bestMatchQueue.head)
         val best = Stream.continually {
           bestMatchQueue.dequeue()
