@@ -57,6 +57,7 @@ case class Word(letters: String) {
     }
     val wordRankingList: List[WordRanking] = WordFrequency.getRankingList(wordSize)
 
+    //FIXME: This is inefficient. should use a set or map
     val wordRanking: Option[WordRanking] = wordRankingList.find {
       theWordRanking: WordRanking =>
         theWordRanking.word.equalsIgnoreCase(letters)//TODO: move to find method in WordFrequency to search by word

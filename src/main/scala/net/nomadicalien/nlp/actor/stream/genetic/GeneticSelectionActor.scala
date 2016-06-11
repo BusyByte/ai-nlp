@@ -23,6 +23,7 @@ class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscri
   }
 
   val bestMatchQueue = new mutable.PriorityQueue[Sentence]
+  val currentSet = mutable.Set.empty[Sentence]
 
   override val requestStrategy = new MaxInFlightRequestStrategy(max = 10) {
     override def inFlightInternally: Int = 0
@@ -34,8 +35,9 @@ class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscri
         logSentence("SANITY CHECK", s)
       }
 
-      if(!bestMatchQueue.exists(s2 => s2 == s2)) {
+      if(!currentSet.contains(s)) {
         bestMatchQueue.enqueue(s)
+        currentSet.add(s)
         if(s == solutionSentence) {
           logSentence("***FOUND IT***", s)
           logger.info("!!shutting down!!!")
@@ -52,9 +54,11 @@ class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscri
         logSentence("BEST", bestMatchQueue.head)
         val best = Stream.continually {
           bestMatchQueue.dequeue()
-        }.take(100).toList
+        }.take(100).toVector
         bestMatchQueue.clear()
         bestMatchQueue.enqueue(best :_*)
+        currentSet.clear()
+        currentSet ++= best
         context.system.eventStream.publish(ReplacePool(best))
       }
   }

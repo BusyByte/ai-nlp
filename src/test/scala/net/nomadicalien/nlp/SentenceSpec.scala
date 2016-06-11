@@ -17,6 +17,17 @@ class SentenceSpec extends NLPSpec {
       swappedSentence.toString must_== "ahe lreaay red btpp bounced tpong"
     }
 
+    "verifySwapMultipleA" in {
+      val swaps = Array.fill(26)(Option.empty[Char])
+      val losingIndex1: Int = 't' - 'a'
+      val losingIndex2: Int = 'l' - 'a'
+      swaps.update(losingIndex1, Some('a'))
+      swaps.update(losingIndex2, Some('p'))
+
+      val swappedSentence = sentence.swapMultipleA(swaps)
+      swappedSentence.toString must_== "ahe lreaay red btpp bounced tpong"
+    }
+
     "verifySwap" in {
       val swappedSentence = sentence.swap('t', 'l')
       "lhe prelly red batt bounced atong" must_== swappedSentence.toString

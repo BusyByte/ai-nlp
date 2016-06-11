@@ -10,4 +10,4 @@ case class Permutation(perm: List[Char])
 case class CompleteResult()
 case class NewMax(sentence: Sentence)
 
-case class ReplacePool(newPool: List[Sentence])
+case class ReplacePool(newPool: Vector[Sentence])

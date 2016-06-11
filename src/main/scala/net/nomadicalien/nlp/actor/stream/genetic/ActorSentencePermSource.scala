@@ -15,7 +15,7 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
   context.system.eventStream.subscribe(self, classOf[ReplacePool])
 
   val rng = new Random(new SecureRandom())
-  var pool: List[Sentence] = List(encryptedSentence)
+  var pool: Vector[Sentence] = Vector(encryptedSentence)
 
   val letterPool: Array[Letter] = ('a' to 'z').toArray
   val numLetters = 26
@@ -51,7 +51,16 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
     val losingLetters = sampleLetters(numReplacements, distinctLetters)
     val replacementPool = letterPool.filterNot(losingLetters.contains).toList
     val replacementLetters = sampleLetters(losingLetters.size, replacementPool)
-    base.swapMultiple((losingLetters zip replacementLetters).toMap)
+
+
+    val swaps = Array.fill(26)(Option.empty[Char])
+    (losingLetters zip replacementLetters).foreach {p =>
+      val ll = p._1
+      val rl = p._2
+      val llIndex = ll - 'a'
+      swaps.update(llIndex, Some(rl))
+    }
+    base.swapMultipleA(swaps)
   }
 
   def leastLikelyWordSample(base: Sentence): Sentence = {

@@ -57,6 +57,27 @@ case class Sentence(stringToDecode : String) extends Logging {
     )
   }
 
+  def swapMultipleA(swaps: Array[Option[Char]]): Sentence = {
+    for {
+      index <- swaps.indices
+      replacement <- swaps(index)
+      replacementIndex :Int = replacement - 'a'
+      currentChar: Char = ('a' + index).toChar
+    } yield swaps.update(replacementIndex, Some(currentChar))
+
+    Sentence(
+      encodedString.map {
+        theChar: Char =>
+          if(theChar.isLetter) {
+            val index: Int = theChar - 'a'
+            swaps(index).getOrElse(theChar)
+          } else {
+            theChar
+          }
+      }
+    )
+  }
+
   private def swapString(input: String, losingLetter: Letter, candidateLetter: Letter): String = {
     if(losingLetter == candidateLetter)
       input
