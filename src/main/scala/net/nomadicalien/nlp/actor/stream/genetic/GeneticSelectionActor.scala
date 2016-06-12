@@ -50,15 +50,15 @@ class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscri
       }
 
 
-      if(bestMatchQueue.size > 1000) {
+      if(bestMatchQueue.size > 1000000) {
         logSentence("BEST", bestMatchQueue.head)
         val best = Stream.continually {
           bestMatchQueue.dequeue()
-        }.take(100).toVector
+        }.take(1000).toVector
         bestMatchQueue.clear()
-        bestMatchQueue.enqueue(best :_*)
+        //bestMatchQueue.enqueue(best :_*)
         currentSet.clear()
-        currentSet ++= best
+        //currentSet ++= best
         context.system.eventStream.publish(ReplacePool(best))
       }
   }

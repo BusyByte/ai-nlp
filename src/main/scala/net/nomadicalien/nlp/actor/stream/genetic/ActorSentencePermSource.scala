@@ -47,7 +47,7 @@ class ActorSentencePermSource(val encryptedSentence: Sentence) extends ActorPubl
 
   def sampleDistinctLetters(distinctLetters: List[Letter], base: Sentence) = {
     val numDistinctLetters = distinctLetters.size
-    val numReplacements: Int = math.min(numDistinctLetters, rng.nextInt(3) + 1)
+    val numReplacements: Int = math.min(numDistinctLetters, rng.nextInt(6) + 1)
     val losingLetters = sampleLetters(numReplacements, distinctLetters)
     val replacementPool = letterPool.filterNot(losingLetters.contains).toList
     val replacementLetters = sampleLetters(losingLetters.size, replacementPool)
