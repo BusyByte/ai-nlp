@@ -10,7 +10,7 @@ class SentenceSpec extends NLPSpec {
 
     "verifyLeastLikelyWord" in {
       val testSentence = new Sentence("the first conference on the topic of artificiaq inteqqikence mas hequ at uartjoxth coqqeke in this year")
-      testSentence.findLeastLikelyWord().letters must_== "artificiaq"
+      testSentence.findLeastLikelyWord().letters must_== "inteqqikence"
     }
 
     "verifySwapMultiple" in {

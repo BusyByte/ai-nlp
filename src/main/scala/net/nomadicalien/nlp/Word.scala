@@ -85,7 +85,7 @@ case class Word(letters: String) {
         if (foundWord) {
           1.0d / KnownWords.numberWordsOfSize(wordSize)
         } else {
-          math.max(probabilityCorrectByLetters, 1.0d / WordFrequency.ESTIMATE_NUMBER_WORDS_IN_ENGLISH)
+          probabilityCorrectByLetters
         }
       }
     }
