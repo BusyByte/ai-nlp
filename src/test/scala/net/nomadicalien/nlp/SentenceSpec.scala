@@ -1,5 +1,7 @@
 package net.nomadicalien.nlp
 
+import net.nomadicalien.nlp.Probability.Probability
+
 class SentenceSpec extends NLPSpec {
 
   val sentence = new Sentence("The pretty red ball bounced along.")

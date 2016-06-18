@@ -1,11 +1,12 @@
 package net.nomadicalien.nlp.actor
 
 import akka.actor.Actor
-import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
-import net.nomadicalien.nlp.{Logging, ProbFormatter, Sentence}
+import net.nomadicalien.nlp.{Logging, Sentence}
+import net.nomadicalien.nlp.Sentence._
+import net.nomadicalien.nlp.Probability._
 
-import scala.concurrent.Promise
-import scala.util.{Random, Success}
+
+import scala.util.Random
 
 class SentenceComparator extends Actor with Logging {
   var currentMax: Option[Sentence] = None
@@ -24,9 +25,4 @@ class SentenceComparator extends Actor with Logging {
         logSentence("SANITY CHECK", s)
       }
   }
-
-  def logSentence(label: String, currentSentence: Sentence) = {
-    logger.info(s"DECODED       [$currentSentence][${ProbFormatter.format(currentSentence.probabilityCorrect)}][$label]")
-  }
-
 }

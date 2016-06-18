@@ -1,5 +1,7 @@
 package net.nomadicalien.nlp
 
+import net.nomadicalien.nlp.Probability.Probability
+
 case class LetterProb(letter: Letter, probability: Probability = 0.0d)
 
 object LetterProb {

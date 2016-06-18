@@ -3,17 +3,16 @@ package net.nomadicalien.nlp.actor.stream.genetic
 import java.util.concurrent.TimeUnit
 
 import akka.stream.actor.ActorSubscriberMessage.OnNext
-import akka.stream.actor.{MaxInFlightRequestStrategy, ActorSubscriber}
+import akka.stream.actor.{ActorSubscriber, MaxInFlightRequestStrategy}
+import net.nomadicalien.nlp.Probability._
+import net.nomadicalien.nlp.Sentence._
 import net.nomadicalien.nlp.actor.ReplacePool
-import net.nomadicalien.nlp.{ProbFormatter, Sentence, Logging}
+import net.nomadicalien.nlp.{Logging, Sentence}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
-/**
-  * Created by Shawn on 6/1/2016.
-  */
 class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscriber with Logging{
   import scala.collection.mutable
   val rng = new Random()
@@ -61,9 +60,5 @@ class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscri
         //currentSet ++= best
         context.system.eventStream.publish(ReplacePool(best))
       }
-  }
-
-  def logSentence(label: String, currentSentence: Sentence) = {
-    logger.info(s"DECODED       [$currentSentence][${ProbFormatter.format(currentSentence.probabilityCorrect)}][$label]")
   }
 }

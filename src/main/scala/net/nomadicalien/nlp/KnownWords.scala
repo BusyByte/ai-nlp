@@ -26,15 +26,15 @@ object KnownWords {
     "american-words.95.words"
   )
 
-  val wordSizeToWords : Map[Integer, Set[String]] = loadWords
+  val wordSizeToWords : Map[Int, Set[String]] = loadWords
 
 
-  private def loadWords : Map[Integer, Set[String]] = {
-    val accumulateSizeToWords = mutable.Map[Integer, mutable.Set[String]]()
+  private def loadWords : Map[Int, Set[String]] = {
+    val accumulateSizeToWords = mutable.Map[Int, mutable.Set[String]]()
     wordFiles.foreach {
       fileName =>
         loadWordsFromFile(fileName).foreach {
-          case (key : Integer, theSetToAdd : Set[String]) =>
+          case (key : Int, theSetToAdd : Set[String]) =>
            val setToAddTo = accumulateSizeToWords.getOrElseUpdate(key, mutable.Set[String]())
            setToAddTo ++= theSetToAdd
         }
@@ -42,9 +42,9 @@ object KnownWords {
     accumulateSizeToWords.mapValues(_.toSet).toMap
   }
 
-  private def loadWordsFromFile(fileName : String) : Map[Integer, Set[String]] = {
-    val accumulateSizeToWords = mutable.Map[Integer, mutable.Set[String]]()
-    val stream: BufferedSource = scala.io.Source.fromInputStream(Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName), "ISO-8859-1")
+  private def loadWordsFromFile(fileName : String) : Map[Int, Set[String]] = {
+    val accumulateSizeToWords = mutable.Map[Int, mutable.Set[String]]()
+    val stream: BufferedSource = scala.io.Source.fromInputStream(Thread.currentThread().getContextClassLoader.getResourceAsStream(fileName), "ISO-8859-1")
 
     stream.getLines().foreach {
       readLine : String =>
@@ -62,13 +62,10 @@ object KnownWords {
 
   def findWord(wordToSearchFor : String) : Boolean = {
     val length = wordToSearchFor.length
-    val wordSet = wordSizeToWords.getOrElse(length, Set[String]())
-
-    wordSet.contains(wordToSearchFor)
+    wordSizeToWords.get(length).exists(_.contains(wordToSearchFor))
   }
 
   def numberWordsOfSize(length : Int) : Int = {
-    val wordList = wordSizeToWords.getOrElse(length, Set[String]())
-    wordList.size
+    wordSizeToWords.get(length).map(_.size).getOrElse(0)
   }
 }

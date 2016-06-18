@@ -1,6 +1,9 @@
 package net.nomadicalien.nlp
 
+import cats.Show
+import net.nomadicalien.nlp.Probability.Probability
 import net.nomadicalien.nlp.Sentence.{ReplacementLetter, LosingLetter}
+import org.apache.logging.log4j.Logger
 
 
 object Sentence {
@@ -9,6 +12,19 @@ object Sentence {
   val ALPHA_PATTERN : String = "[\\p{Alpha}]+"
   type LosingLetter = Letter
   type ReplacementLetter = Letter
+
+  def logSentence(label: String, currentSentence: Sentence)(implicit logger: Logger, s: Show[Sentence]) = {
+    val sentenceShow = s.show(currentSentence)
+    logger.info(s"[$sentenceShow][$label]")
+  }
+
+  //TODO: would have liked to have this be implicit object but can't figure out how to chain them
+  implicit def sentenceShow(implicit p: Show[Probability]) = new Show[Sentence] {
+    override def show(sentence: Sentence): String = {
+      val probShow = p.show(sentence.probabilityCorrect)
+      s"$sentence:$probShow"
+    }
+  }
 }
 
 object SentenceOrdering extends Ordering[Sentence]  {
@@ -95,8 +111,6 @@ case class Sentence(stringToDecode : String) extends Logging {
 
   override def toString: String  = encodedString
 
-
-
   override def equals(obj: scala.Any): Boolean = obj match {
     case s: Sentence => encodedString.equals(s.encodedString)
     case _ => false
@@ -104,8 +118,8 @@ case class Sentence(stringToDecode : String) extends Logging {
 
   override def hashCode(): Int = encodedString.hashCode
 
-  def printWordProbabilities() = {
-    this.words.map(_.format()).mkString
+  def printWordProbabilities(implicit w: Show[Word]) = {
+    this.words.map(w.show).mkString
   }
 
   private def determineProbabilityCorrect(wordList: List[Word]): Probability = {

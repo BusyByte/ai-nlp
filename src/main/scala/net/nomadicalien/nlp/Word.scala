@@ -2,11 +2,33 @@ package net.nomadicalien.nlp
 
 import java.util.regex.Pattern
 
+import cats.Show
+import net.nomadicalien.nlp.Probability.Probability
 import net.nomadicalien.nlp.WordFrequency.WordRanking
 
 object Word {
   val onlyVowelPattern = Pattern.compile("[aAeEiIoOuUyY]+")
   val onlyConsonantsPattern = Pattern.compile("[bBcCdDfFgGhHjJkKlLmMnNpPqQrRsStTvVxXzZwWyY]+")
+
+  implicit def wordShow(implicit p: Show[Probability]) = new Show[Word] {
+    override def show(word: Word): String = {
+      val sb = new StringBuilder()
+      sb.append("\n")
+      sb.append(word)
+      sb.append("\n")
+      sb.append("letter prob")
+      sb.append("=")
+      sb.append(p.show(word.probabilityCorrectByLetters))
+      sb.append(",")
+      sb.append("word prob")
+      sb.append("=")
+      sb.append(p.show(word.probabilityCorrectByWord))
+      sb.append("\n\n")
+
+      sb.toString()
+    }
+
+  }
 }
 
 case class Word(letters: String) {
@@ -69,23 +91,6 @@ case class Word(letters: String) {
     }
 
     probabilityCorrect
-  }
-
-  def format(): String = {
-    val sb = new StringBuilder()
-    sb.append("\n")
-    sb.append(this.toString())
-    sb.append("\n")
-    sb.append("letter prob")
-    sb.append("=")
-    sb.append(ProbFormatter.format(probabilityCorrectByLetters))
-    sb.append(",")
-    sb.append("word prob")
-    sb.append("=")
-    sb.append(ProbFormatter.format(probabilityCorrectByWord))
-    sb.append("\n\n")
-
-    sb.toString()
   }
 
   override def toString: String = letters

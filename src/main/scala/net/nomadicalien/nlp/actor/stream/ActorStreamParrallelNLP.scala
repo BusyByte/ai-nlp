@@ -5,7 +5,9 @@ import akka.actor._
 import akka.stream._
 import akka.stream.scaladsl._
 import net.nomadicalien.nlp.actor._
-import net.nomadicalien.nlp.{Logging, NaturalLanguageProcessor, ProbFormatter, Sentence}
+import net.nomadicalien.nlp.{Logging, NaturalLanguageProcessor, Sentence}
+import net.nomadicalien.nlp.Sentence._
+import net.nomadicalien.nlp.Probability._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -45,9 +47,9 @@ class ActorStreamParrallelNLP(stringToDecode: String, solution: String) extends 
   val runnable: RunnableGraph[Future[Sentence]] = permSource.async.via(sentenceGenerator).toMat(Sink.fold(encryptedSentence)(sentenceMax))(Keep.right)
 
   override def process(): Sentence = {
-    logger.info(s"ENCRYPTED     [$encryptedSentence]")
-    logger.info(s"SOLUTION      [$solutionSentence]")
-    logSentence("INITIAL SENTENCE", encryptedSentence)
+
+    logSentence("INITIAL ENCRYPTED SENTENCE", encryptedSentence)
+    logSentence("SOLUTION SENTENCE", solutionSentence)
 
     val sentenceF: Future[Sentence] = runnable.run()
     Await.result(sentenceF, Duration.Inf)
@@ -65,10 +67,6 @@ class ActorStreamParrallelNLP(stringToDecode: String, solution: String) extends 
     reconciler ! NewMax(newMax)
 
     newMax
-  }
-
-  def logSentence(label: String, currentSentence: Sentence) = {
-    logger.info(s"DECODED       [$currentSentence][${ProbFormatter.format(currentSentence.probabilityCorrect)}][$label]")
   }
 }
 

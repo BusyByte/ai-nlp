@@ -1,6 +1,9 @@
 package net.nomadicalien.nlp
 
 
+import net.nomadicalien.nlp.Sentence._
+import net.nomadicalien.nlp.Probability._
+
 import scala.annotation.tailrec
 import scala.util.Random
 
@@ -11,13 +14,11 @@ class BruteForceNLP(stringToDecode: String, solution: String) extends NaturalLan
   val random = new Random()
 
   def process(): Sentence = {
-    logger.info(s"ENCRYPTED     [$encryptedSentence]")
-    logger.info(s"SOLUTION      [$solutionSentence]")
+    logSentence("INITIAL ENCRYPTED SENTENCE", encryptedSentence)
+    logSentence("SOLUTION SENTENCE", solutionSentence)
     val perms = ('a' to 'z').toList.permutations
-    logSentence("INITIAL SENTENCE", encryptedSentence)
     replaceLetter(encryptedSentence, perms, encryptedSentence)
   }
-
 
   @tailrec
   private def replaceLetter(sentence: Sentence, perms: Iterator[List[Char]], maxSentence: Sentence): Sentence = {
@@ -46,10 +47,5 @@ class BruteForceNLP(stringToDecode: String, solution: String) extends NaturalLan
       }
 
     }
-  }
-
-
-  def logSentence(label: String, currentSentence: Sentence) = {
-    logger.info(s"DECODED       [$currentSentence][${ProbFormatter.format(currentSentence.probabilityCorrect)}][$label]")
   }
 }

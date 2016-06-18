@@ -4,6 +4,8 @@ import akka.NotUsed
 import akka.actor._
 import akka.stream._
 import akka.stream.scaladsl._
+import net.nomadicalien.nlp.Probability._
+import net.nomadicalien.nlp.Sentence._
 import net.nomadicalien.nlp._
 import net.nomadicalien.nlp.actor._
 import net.nomadicalien.nlp.actor.stream.StreamSentenceComparatorReconciler
@@ -46,18 +48,15 @@ class ActorStreamGeneticNLP(stringToDecode: String, solution: String) extends Na
   val runnable: RunnableGraph[NotUsed] = permSource.async.via(sentenceGenerator).async.toMat(Sink.actorSubscriber(Props(classOf[GeneticSelectionActor], solutionSentence)))(Keep.none)
 
   override def process(): Sentence = {
-    logger.info(s"ENCRYPTED     [$encryptedSentence]")
-    logger.info(s"SOLUTION      [$solutionSentence]")
-    logSentence("INITIAL SENTENCE", encryptedSentence)
+    logSentence("INITIAL ENCRYPTED SENTENCE", encryptedSentence)
+    logSentence("SOLUTION SENTENCE", solutionSentence)
 
     runnable.run()
+
     Await.result(actorSystem.whenTerminated, Duration.Inf)
-    encryptedSentence//not right, should ask actor for result after certain time limit
+    encryptedSentence//TODO: not right, should ask actor for result after certain time limit
   }
 
-  def logSentence(label: String, currentSentence: Sentence) = {
-    logger.info(s"DECODED       [$currentSentence][${ProbFormatter.format(currentSentence.probabilityCorrect)}][$label]")
-  }
 }
 
 

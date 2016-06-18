@@ -1,14 +1,13 @@
 package net.nomadicalien.nlp.actor
 
 import akka.actor.Actor
-import net.nomadicalien.nlp.{Logging, ProbFormatter, Sentence}
+import net.nomadicalien.nlp.{Logging, Sentence}
 
 import scala.concurrent.Promise
 import scala.util.{Random, Success}
+import net.nomadicalien.nlp.Sentence._
+import net.nomadicalien.nlp.Probability._
 
-/**
- * Created by Shawn on 12/16/2014.
- */
 class SentenceComparatorReconciler(p: Promise[Sentence], encryptedSentence: Sentence, solutionSentence: Sentence) extends Actor with Logging {
   var currentMax: Sentence = encryptedSentence
   val random = new Random()
@@ -36,9 +35,4 @@ class SentenceComparatorReconciler(p: Promise[Sentence], encryptedSentence: Sent
       context.stop(self)
       context.system.terminate()
   }
-
-  def logSentence(label: String, currentSentence: Sentence) = {
-    logger.info(s"DECODED       [$currentSentence][${ProbFormatter.format(currentSentence.probabilityCorrect)}][$label]")
-  }
-
 }

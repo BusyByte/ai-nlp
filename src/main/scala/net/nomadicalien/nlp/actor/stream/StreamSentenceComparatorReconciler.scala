@@ -1,14 +1,13 @@
 package net.nomadicalien.nlp.actor.stream
 
 import akka.actor.Actor
+import net.nomadicalien.nlp.Probability._
+import net.nomadicalien.nlp.Sentence._
 import net.nomadicalien.nlp.actor.NewMax
-import net.nomadicalien.nlp.{Logging, ProbFormatter, Sentence}
+import net.nomadicalien.nlp.{Logging, Sentence}
 
 import scala.util.Random
 
-/**
-  * Created by Shawn on 5/28/2016.
-  */
 class StreamSentenceComparatorReconciler(encryptedSentence: Sentence, solutionSentence: Sentence) extends Actor with Logging {
   var currentMax: Sentence = encryptedSentence
   val random = new Random()
@@ -27,10 +26,6 @@ class StreamSentenceComparatorReconciler(encryptedSentence: Sentence, solutionSe
       if(solutionSentence == s) {
         logger.info("!!!---Found it---!!!")
       }
-  }
-
-  def logSentence(label: String, currentSentence: Sentence) = {
-    logger.info(s"DECODED       [$currentSentence][${ProbFormatter.format(currentSentence.probabilityCorrect)}][$label]")
   }
 
 }
