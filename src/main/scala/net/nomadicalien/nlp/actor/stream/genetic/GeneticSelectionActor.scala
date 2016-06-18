@@ -1,7 +1,5 @@
 package net.nomadicalien.nlp.actor.stream.genetic
 
-import java.util.concurrent.TimeUnit
-
 import akka.stream.actor.ActorSubscriberMessage.OnNext
 import akka.stream.actor.{ActorSubscriber, MaxInFlightRequestStrategy}
 import net.nomadicalien.nlp.Probability._
@@ -9,8 +7,6 @@ import net.nomadicalien.nlp.Sentence._
 import net.nomadicalien.nlp.actor.ReplacePool
 import net.nomadicalien.nlp.{Logging, Sentence}
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
 class GeneticSelectionActor(val solutionSentence: Sentence) extends ActorSubscriber with Logging {
