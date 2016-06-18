@@ -75,22 +75,17 @@ case class Word(letters: String) {
     if (hasAllConsonants || (wordSize > 1 && hasAllVowels)) {
       return 0.0d
     }
-    val wordRanking: Option[WordRanking] = WordFrequency.getWordRanking(letters)
+   // val wordRanking: Option[WordRanking] = WordFrequency.getWordRanking(letters)
 
-    val probabilityCorrect : Double = {
-      if (wordRanking.isDefined) {
-        wordRanking.get.probability
-      } else {
-        val foundWord = KnownWords.findWord(letters)
-        if (foundWord) {
-          1.0d / KnownWords.numberWordsOfSize(wordSize)
-        } else {
-          probabilityCorrectByLetters
-        }
-      }
-    }
+    //val probabilityCorrect : Double = {
+        //if (wordRanking.isDefined) {
+        //wordRanking.get.probability
+      //} else {
+        //probabilityCorrectByLetters
+      //}
+      //}
 
-    probabilityCorrect
+  probabilityCorrectByLetters
   }
 
   override def toString: String = letters

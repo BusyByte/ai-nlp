@@ -15,7 +15,7 @@ object Probability {
         numberFormat
       }
     }
-    override def show(probability: Probability): String = formatHolder.get.format(probability)
+    override def show(probability: Probability): String = formatHolder.get.format(math.log10(probability))
   }
 }
 

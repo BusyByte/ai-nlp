@@ -123,10 +123,8 @@ case class Sentence(stringToDecode : String) extends Logging {
   }
 
   private def determineProbabilityCorrect(wordList: List[Word]): Probability = {
-    val distinctWords = wordList.distinct
-    val probability: Double =
 
-      distinctWords.map(_.probabilityCorrectByWord).sum / distinctWords.size
+    val probability: Double = wordList.map(_.probabilityCorrectByWord).product
 
     probability
   }
